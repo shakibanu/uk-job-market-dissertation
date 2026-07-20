@@ -1,0 +1,298 @@
+/* This is the main stylesheet for my dashboard. I went with a light,
+   clean look, similar to what you'd see on a professional analytics
+   product - white cards, blue accent colour, simple typography. */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+/* Setting up my colours and spacing as variables here, so I only have to
+   change a value once if I want to update the theme later */
+:root {
+  --bg: #F8FAFC;
+  --card: #FFFFFF;
+  --primary-blue: #2563EB;
+  --dark-navy: #1E293B;
+  --success: #16A34A;
+  --warning: #D97706;
+  --danger: #DC2626;
+  --text-primary: #111827;
+  --text-secondary: #6B7280;
+  --border: #E5E7EB;
+
+  --radius-card: 12px;
+  --radius-button: 10px;
+  --pad-outer: 32px;
+  --gap-cards: 24px;
+  --gap-chart-heading: 16px;
+  --gap-sections: 48px;
+}
+
+body {
+  background-color: var(--bg);
+  color: var(--text-primary);
+  font-family: 'Inter', 'Segoe UI', Roboto, Arial, sans-serif;
+  margin: 0;
+  position: relative;
+}
+
+/* Just a very light grid texture in the background, kept subtle so it
+   doesn't distract from the charts */
+body::before {
+  content: "";
+  position: fixed; inset: 0; z-index: -1;
+  background-image:
+    linear-gradient(rgba(37,99,235,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(37,99,235,0.03) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+
+/* Header stays fixed at the top while scrolling */
+.app-header {
+  height: 72px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 var(--pad-outer);
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  animation: fadeSlideDown 0.3s ease;
+}
+
+.app-title {
+  font-family: 'Inter', sans-serif;
+  font-weight: 700;
+  font-size: 20px;
+  letter-spacing: -0.2px;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.app-subtitle {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--success);
+}
+
+/* The little pulsing dot next to "Data current to 2026" */
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--success);
+  box-shadow: 0 0 6px rgba(22, 163, 74, 0.5);
+  animation: pulse 2s infinite;
+}
+
+/* Styling for the 4 tabs across the top (Overview, Sectors, Companies, Salary) */
+.custom-tabs .tab {
+  font-family: 'Inter', sans-serif !important;
+  font-weight: 500 !important;
+  font-size: 14px !important;
+  color: var(--text-secondary) !important;
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 2px solid transparent !important;
+  padding: 10px 4px !important;
+  margin-right: 28px !important;
+  transition: color 200ms ease, border-color 200ms ease;
+}
+.custom-tabs .tab:hover {
+  color: var(--text-primary) !important;
+}
+.custom-tabs .tab--selected {
+  color: var(--primary-blue) !important;
+  border-bottom: 2px solid var(--primary-blue) !important;
+  font-weight: 600 !important;
+}
+
+/* This wraps whichever tab is currently showing */
+.tab-body {
+  padding: var(--gap-sections) var(--pad-outer);
+  animation: fadeIn 250ms ease;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* The KPI cards at the top of the Overview tab (sectors covered,
+   licensed sponsors, salary threshold, vacancies) */
+.stat-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  padding: 20px 22px;
+  box-shadow: 0 1px 3px rgba(16, 24, 40, 0.06), 0 1px 2px rgba(16, 24, 40, 0.04);
+  transition: transform 200ms ease, box-shadow 200ms ease;
+  animation: fadeSlideUp 300ms ease backwards;
+}
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(16, 24, 40, 0.08), 0 2px 4px rgba(16, 24, 40, 0.04);
+}
+.stat-signal {
+  height: 3px;
+  width: 40px;
+  border-radius: 2px;
+  margin-bottom: 14px;
+}
+.stat-value {
+  font-family: 'Inter', sans-serif;
+  font-variant-numeric: tabular-nums;
+  font-size: 30px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.1;
+}
+.stat-label {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-top: 6px;
+}
+
+/* The trend arrows under some of the stat cards, e.g. "+6.3% vs Q1 2021" */
+.stat-trend {
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.stat-trend.up { color: var(--success); }
+.stat-trend.down { color: var(--danger); }
+.stat-caption {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+/* Generic white card used for charts and other content blocks */
+.panel {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  padding: 24px;
+  box-shadow: 0 1px 3px rgba(16, 24, 40, 0.06);
+  animation: fadeSlideUp 300ms ease backwards;
+}
+.panel-header {
+  margin-bottom: var(--gap-chart-heading);
+}
+.panel-title {
+  font-family: 'Inter', sans-serif;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.panel-subtitle {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+.panel-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+/* Dropdowns and the text search box on the Companies tab */
+.Select-control, .dash-dropdown .Select-control {
+  background: var(--card) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: var(--radius-button) !important;
+  color: var(--text-primary) !important;
+}
+input[type="text"] {
+  background: var(--card) !important;
+  border: 1px solid var(--border) !important;
+  color: var(--text-primary) !important;
+  border-radius: var(--radius-button) !important;
+  padding: 9px 14px !important;
+  font-family: 'Inter', sans-serif !important;
+  transition: border-color 200ms ease, box-shadow 200ms ease;
+}
+input[type="text"]:focus {
+  outline: none !important;
+  border-color: var(--primary-blue) !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12) !important;
+}
+label {
+  font-size: 13px !important;
+  color: var(--text-secondary) !important;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+/* The sponsor company table on the Companies tab */
+.table {
+  color: var(--text-primary) !important;
+  border-color: var(--border) !important;
+  font-size: 14px;
+}
+.table thead th {
+  background: #F9FAFB !important;
+  color: var(--text-secondary) !important;
+  font-family: 'Inter', sans-serif !important;
+  font-size: 12px !important;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  border-color: var(--border) !important;
+  font-weight: 600 !important;
+  position: sticky;
+  top: 0;
+}
+.table td {
+  border-color: var(--border) !important;
+  background: var(--card) !important;
+}
+.table-striped tbody tr:nth-of-type(odd) td {
+  background: #FAFBFC !important;
+}
+.table-hover tbody tr:hover td {
+  background: #EFF6FF !important;
+}
+
+/* Keeping all the animations short (150-250ms) and simple - just fades,
+   slides and a hover lift. Nothing bouncy or flashy, since that would be
+   distracting rather than helpful on a data dashboard. */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeSlideDown {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+/* Staggering the stat cards slightly so they fade in one after another
+   instead of all popping in at once */
+.stat-card:nth-of-type(1) { animation-delay: 0.03s; }
+.stat-card:nth-of-type(2) { animation-delay: 0.06s; }
+.stat-card:nth-of-type(3) { animation-delay: 0.09s; }
+.stat-card:nth-of-type(4) { animation-delay: 0.12s; }
