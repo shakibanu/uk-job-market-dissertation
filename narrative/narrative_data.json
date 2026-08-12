@@ -1,0 +1,345 @@
+{
+  "national_vacancy_trend": [
+    {
+      "Quarter": "2021-Q1",
+      "Vacancy_Count": 12339417
+    },
+    {
+      "Quarter": "2021-Q2",
+      "Vacancy_Count": 12424413
+    },
+    {
+      "Quarter": "2021-Q3",
+      "Vacancy_Count": 12466138
+    },
+    {
+      "Quarter": "2021-Q4",
+      "Vacancy_Count": 12499260
+    },
+    {
+      "Quarter": "2022-Q1",
+      "Vacancy_Count": 12580968
+    },
+    {
+      "Quarter": "2022-Q2",
+      "Vacancy_Count": 12647800
+    },
+    {
+      "Quarter": "2022-Q3",
+      "Vacancy_Count": 12571115
+    },
+    {
+      "Quarter": "2022-Q4",
+      "Vacancy_Count": 12640349
+    },
+    {
+      "Quarter": "2023-Q1",
+      "Vacancy_Count": 12831168
+    },
+    {
+      "Quarter": "2023-Q2",
+      "Vacancy_Count": 12848827
+    },
+    {
+      "Quarter": "2023-Q3",
+      "Vacancy_Count": 12811009
+    },
+    {
+      "Quarter": "2023-Q4",
+      "Vacancy_Count": 12945666
+    },
+    {
+      "Quarter": "2024-Q1",
+      "Vacancy_Count": 13046255
+    },
+    {
+      "Quarter": "2024-Q2",
+      "Vacancy_Count": 13045727
+    },
+    {
+      "Quarter": "2024-Q3",
+      "Vacancy_Count": 13155502
+    },
+    {
+      "Quarter": "2024-Q4",
+      "Vacancy_Count": 13195244
+    },
+    {
+      "Quarter": "2025-Q1",
+      "Vacancy_Count": 13272227
+    },
+    {
+      "Quarter": "2025-Q2",
+      "Vacancy_Count": 13167867
+    },
+    {
+      "Quarter": "2025-Q3",
+      "Vacancy_Count": 13080720
+    },
+    {
+      "Quarter": "2025-Q4",
+      "Vacancy_Count": 13114545
+    }
+  ],
+  "visa_grants_by_sector_year": [
+    {
+      "Year": 2021,
+      "Sector": "Education",
+      "Visa_Grants": 4394
+    },
+    {
+      "Year": 2021,
+      "Sector": "Engineering",
+      "Visa_Grants": 14562
+    },
+    {
+      "Year": 2021,
+      "Sector": "Finance",
+      "Visa_Grants": 7284
+    },
+    {
+      "Year": 2021,
+      "Sector": "Healthcare",
+      "Visa_Grants": 32358
+    },
+    {
+      "Year": 2021,
+      "Sector": "Technology",
+      "Visa_Grants": 14328
+    },
+    {
+      "Year": 2022,
+      "Sector": "Education",
+      "Visa_Grants": 5427
+    },
+    {
+      "Year": 2022,
+      "Sector": "Engineering",
+      "Visa_Grants": 27439
+    },
+    {
+      "Year": 2022,
+      "Sector": "Finance",
+      "Visa_Grants": 12682
+    },
+    {
+      "Year": 2022,
+      "Sector": "Healthcare",
+      "Visa_Grants": 79869
+    },
+    {
+      "Year": 2022,
+      "Sector": "Technology",
+      "Visa_Grants": 22529
+    },
+    {
+      "Year": 2023,
+      "Sector": "Education",
+      "Visa_Grants": 6376
+    },
+    {
+      "Year": 2023,
+      "Sector": "Engineering",
+      "Visa_Grants": 23924
+    },
+    {
+      "Year": 2023,
+      "Sector": "Finance",
+      "Visa_Grants": 9532
+    },
+    {
+      "Year": 2023,
+      "Sector": "Healthcare",
+      "Visa_Grants": 150735
+    },
+    {
+      "Year": 2023,
+      "Sector": "Technology",
+      "Visa_Grants": 15484
+    },
+    {
+      "Year": 2024,
+      "Sector": "Education",
+      "Visa_Grants": 4847
+    },
+    {
+      "Year": 2024,
+      "Sector": "Engineering",
+      "Visa_Grants": 17409
+    },
+    {
+      "Year": 2024,
+      "Sector": "Finance",
+      "Visa_Grants": 8470
+    },
+    {
+      "Year": 2024,
+      "Sector": "Healthcare",
+      "Visa_Grants": 28232
+    },
+    {
+      "Year": 2024,
+      "Sector": "Technology",
+      "Visa_Grants": 12124
+    },
+    {
+      "Year": 2025,
+      "Sector": "Education",
+      "Visa_Grants": 2557
+    },
+    {
+      "Year": 2025,
+      "Sector": "Engineering",
+      "Visa_Grants": 13727
+    },
+    {
+      "Year": 2025,
+      "Sector": "Finance",
+      "Visa_Grants": 8142
+    },
+    {
+      "Year": 2025,
+      "Sector": "Healthcare",
+      "Visa_Grants": 14064
+    },
+    {
+      "Year": 2025,
+      "Sector": "Technology",
+      "Visa_Grants": 9214
+    }
+  ],
+  "salary_by_sector_year": [
+    {
+      "Year": 2021,
+      "Sector": "Education",
+      "Median_Salary": 35969
+    },
+    {
+      "Year": 2021,
+      "Sector": "Engineering",
+      "Median_Salary": 40984
+    },
+    {
+      "Year": 2021,
+      "Sector": "Finance",
+      "Median_Salary": 37067
+    },
+    {
+      "Year": 2021,
+      "Sector": "Healthcare",
+      "Median_Salary": 34887
+    },
+    {
+      "Year": 2021,
+      "Sector": "Technology",
+      "Median_Salary": 40826
+    },
+    {
+      "Year": 2022,
+      "Sector": "Education",
+      "Median_Salary": 32884
+    },
+    {
+      "Year": 2022,
+      "Sector": "Engineering",
+      "Median_Salary": 42482
+    },
+    {
+      "Year": 2022,
+      "Sector": "Finance",
+      "Median_Salary": 38818
+    },
+    {
+      "Year": 2022,
+      "Sector": "Healthcare",
+      "Median_Salary": 35485
+    },
+    {
+      "Year": 2022,
+      "Sector": "Technology",
+      "Median_Salary": 43005
+    },
+    {
+      "Year": 2023,
+      "Sector": "Education",
+      "Median_Salary": 34274
+    },
+    {
+      "Year": 2023,
+      "Sector": "Engineering",
+      "Median_Salary": 44571
+    },
+    {
+      "Year": 2023,
+      "Sector": "Finance",
+      "Median_Salary": 40604
+    },
+    {
+      "Year": 2023,
+      "Sector": "Healthcare",
+      "Median_Salary": 36898
+    },
+    {
+      "Year": 2023,
+      "Sector": "Technology",
+      "Median_Salary": 46042
+    },
+    {
+      "Year": 2024,
+      "Sector": "Education",
+      "Median_Salary": 38521
+    },
+    {
+      "Year": 2024,
+      "Sector": "Engineering",
+      "Median_Salary": 46972
+    },
+    {
+      "Year": 2024,
+      "Sector": "Finance",
+      "Median_Salary": 44345
+    },
+    {
+      "Year": 2024,
+      "Sector": "Healthcare",
+      "Median_Salary": 39732
+    },
+    {
+      "Year": 2024,
+      "Sector": "Technology",
+      "Median_Salary": 51024
+    },
+    {
+      "Year": 2025,
+      "Sector": "Education",
+      "Median_Salary": 40837
+    },
+    {
+      "Year": 2025,
+      "Sector": "Engineering",
+      "Median_Salary": 49155
+    },
+    {
+      "Year": 2025,
+      "Sector": "Finance",
+      "Median_Salary": 47173
+    },
+    {
+      "Year": 2025,
+      "Sector": "Healthcare",
+      "Median_Salary": 40318
+    },
+    {
+      "Year": 2025,
+      "Sector": "Technology",
+      "Median_Salary": 52908
+    }
+  ],
+  "salary_thresholds": {
+    "2021": 26200,
+    "2022": 26200,
+    "2023": 26200,
+    "2024": 38700,
+    "2025": 41700
+  }
+}

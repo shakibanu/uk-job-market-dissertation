@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Navigating the UK Job Market — Your Story</title>
+<style>
+  :root {
+    --blue: #2563EB;
+    --teal: #16A34A;
+    --amber: #D97706;
+    --danger: #DC2626;
+    --bg: #F8FAFC;
+    --surface: #FFFFFF;
+    --border: #E5E7EB;
+    --text: #111827;
+    --text-secondary: #6B7280;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+  }
+
+  /* ---- Hero / Chapter 1 intro ---- */
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 40px 24px;
+    background: linear-gradient(180deg, #FFFFFF 0%, var(--bg) 100%);
+  }
+  .hero-eyebrow {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--blue);
+    margin-bottom: 16px;
+  }
+  .hero h1 {
+    font-size: clamp(32px, 6vw, 64px);
+    font-weight: 800;
+    line-height: 1.1;
+    max-width: 900px;
+    margin-bottom: 24px;
+    letter-spacing: -0.02em;
+  }
+  .hero p {
+    font-size: clamp(16px, 2vw, 20px);
+    color: var(--text-secondary);
+    max-width: 620px;
+    margin-bottom: 40px;
+  }
+  .scroll-cue {
+    font-size: 13px;
+    color: var(--text-secondary);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    animation: bob 2s ease-in-out infinite;
+  }
+  .scroll-cue::after {
+    content: "↓";
+    font-size: 18px;
+  }
+  @keyframes bob {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(8px); }
+  }
+
+  /* ---- Scrolly section structure ---- */
+  .scrolly {
+    position: relative;
+    display: flex;
+    max-width: 1280px;
+    margin: 0 auto;
+  }
+  .scrolly-chart-col {
+    width: 55%;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .scrolly-text-col {
+    width: 45%;
+    padding: 0 40px;
+  }
+  .step {
+    min-height: 90vh;
+    display: flex;
+    align-items: center;
+    padding: 40px 0;
+  }
+  .step-content {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 32px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    opacity: 0.35;
+    transform: translateY(12px);
+    transition: opacity 0.4s ease, transform 0.4s ease;
+  }
+  .step.is-active .step-content {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .step-eyebrow {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--blue);
+    margin-bottom: 8px;
+  }
+  .step-content h2 {
+    font-size: 26px;
+    font-weight: 700;
+    margin-bottom: 14px;
+    letter-spacing: -0.01em;
+  }
+  .step-content p {
+    font-size: 16px;
+    color: var(--text-secondary);
+    margin-bottom: 10px;
+  }
+  .step-stat {
+    display: inline-block;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--amber);
+    background: rgba(217,119,6,0.08);
+    padding: 4px 10px;
+    border-radius: 6px;
+    margin-top: 8px;
+  }
+
+  #chart-svg { max-width: 100%; }
+  .vacancy-line { fill: none; stroke: var(--blue); stroke-width: 2.5; }
+  .vacancy-area { fill: rgba(37,99,235,0.07); }
+  .axis text { font-size: 11px; fill: var(--text-secondary); font-family: 'Inter', sans-serif; }
+  .axis path, .axis line { stroke: var(--border); }
+  .event-line { stroke-dasharray: 4 3; stroke-width: 1.2; opacity: 0; transition: opacity 0.5s ease; }
+  .event-line.visible { opacity: 0.8; }
+  .event-label { font-size: 11px; font-weight: 600; opacity: 0; transition: opacity 0.5s ease; }
+  .event-label.visible { opacity: 1; }
+  .threshold-line { stroke: var(--amber); stroke-width: 1.5; stroke-dasharray: 3 2; opacity: 0; transition: opacity 0.5s ease; }
+  .threshold-line.visible { opacity: 0.9; }
+  .sector-line { fill: none; stroke-width: 2; opacity: 0; transition: opacity 0.6s ease; }
+  .sector-line.visible { opacity: 1; }
+  .sector-label { opacity: 0; transition: opacity 0.6s ease; }
+  .sector-label.visible { opacity: 1; }
+
+  /* ---- Chapter 6 / CTA ---- */
+  .finale {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 60px 24px;
+    background: linear-gradient(180deg, var(--bg) 0%, #FFFFFF 100%);
+  }
+  .finale h2 {
+    font-size: clamp(28px, 5vw, 48px);
+    font-weight: 800;
+    max-width: 800px;
+    margin-bottom: 20px;
+    letter-spacing: -0.02em;
+  }
+  .finale p {
+    font-size: 18px;
+    color: var(--text-secondary);
+    max-width: 600px;
+    margin-bottom: 36px;
+  }
+  .cta-button {
+    display: inline-block;
+    background: var(--blue);
+    color: white;
+    font-weight: 700;
+    font-size: 16px;
+    padding: 16px 36px;
+    border-radius: 10px;
+    text-decoration: none;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    box-shadow: 0 4px 14px rgba(37,99,235,0.3);
+  }
+  .cta-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(37,99,235,0.35);
+  }
+  .sources-link {
+    margin-top: 32px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    text-decoration: underline;
+  }
+
+  /* ---- Mobile ---- */
+  @media (max-width: 860px) {
+    .scrolly { flex-direction: column; }
+    .scrolly-chart-col {
+      position: sticky;
+      top: 0;
+      width: 100%;
+      height: 45vh;
+      z-index: 1;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+    }
+    .scrolly-text-col { width: 100%; padding: 0 20px; }
+    .step { min-height: 50vh; }
+  }
+</style>
+</head>
+<body>
+
+  <section class="hero">
+    <div class="hero-eyebrow">Navigating the UK Job Market · 2021&ndash;2026</div>
+    <h1>What actually happened to sponsored work in the UK &mdash; and why</h1>
+    <p>Five years of Brexit, COVID, and shifting immigration policy, told through the real data. Scroll to see how the market changed for international students.</p>
+    <div class="scroll-cue">Scroll to begin</div>
+  </section>
+
+  <div class="scrolly">
+    <div class="scrolly-chart-col">
+      <svg id="chart-svg" viewBox="0 0 560 420"></svg>
+    </div>
+    <div class="scrolly-text-col">
+
+      <div class="step" data-step="1">
+        <div class="step-content">
+          <div class="step-eyebrow">Chapter 1 &middot; Before Brexit</div>
+          <h2>A different starting point</h2>
+          <p>Before January 2021, EU citizens could work in the UK without needing a visa at all. Employer demand for sponsorship was low, and mostly limited to specialist roles from outside the EU.</p>
+          <p>UK vacancies sat around 12.3 million at the start of 2021 &mdash; the baseline this whole story moves away from.</p>
+        </div>
+      </div>
+
+      <div class="step" data-step="2">
+        <div class="step-content">
+          <div class="step-eyebrow">Chapter 2 &middot; Brexit and COVID</div>
+          <h2>Two shocks, almost at once</h2>
+          <p>Brexit ended free movement for EU citizens in January 2021. Employers who had previously hired EU workers without a visa now had to sponsor them under the same route used for international students.</p>
+          <p>At nearly the same time, the UK was still working through the disruption of the COVID-19 pandemic across the whole economy.</p>
+          <span class="step-stat">Jan 2021 &mdash; free movement ends</span>
+        </div>
+      </div>
+
+      <div class="step" data-step="3">
+        <div class="step-content">
+          <div class="step-eyebrow">Chapter 3 &middot; The 2022 vacancy boom</div>
+          <h2>Everyone was hiring at once</h2>
+          <p>As the economy reopened, vacancies rose sharply, and employers who had previously relied on EU labour turned to the Skilled Worker sponsorship route for the first time &mdash; many of them for the first time ever.</p>
+          <p>By 2022, the pattern that would shape the rest of this story was already forming.</p>
+          <span class="step-stat">2022 &mdash; vacancies climbing fast</span>
+        </div>
+      </div>
+
+      <div class="step" data-step="4">
+        <div class="step-content">
+          <div class="step-eyebrow">Chapter 4 &middot; The threshold rises</div>
+          <h2>The rules changed twice</h2>
+          <p>The government raised the minimum salary threshold for Skilled Worker sponsorship in April 2024, then again in April 2025. Roles that were sponsorable a few years ago may not be anymore.</p>
+          <p>By 2024, Education's median salary had dropped below the new threshold. Healthcare joined it in 2025.</p>
+          <span class="step-stat">£26,200 &rarr; £41,700 in four years</span>
+        </div>
+      </div>
+
+      <div class="step" data-step="5">
+        <div class="step-content">
+          <div class="step-eyebrow">Chapter 5 &middot; Not every sector felt it the same way</div>
+          <h2>Diverging paths</h2>
+          <p>Healthcare visa grants nearly quintupled between 2021 and 2023, driven largely by care worker roles being added to the sponsorship list &mdash; then fell even more sharply after the 2024 and 2025 threshold rises, down to under a tenth of their 2023 peak.</p>
+          <p>Technology followed a smaller version of the same rise, then a steadier decline. Your sector's shape matters as much as the headline trend.</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <section class="finale">
+    <div class="hero-eyebrow">Chapter 6 &middot; Your path forward</div>
+    <h2>This data shows what happened. Now see what it means for you.</h2>
+    <p>Explore your own sector, search real licensed sponsors, and get a realistic picture of your own chances &mdash; not just the national trend.</p>
+    <a href="http://localhost:8050" class="cta-button">Explore the dashboard &rarr;</a>
+    <a href="#sources" class="sources-link">View data sources</a>
+  </section>
+
+<script src="vendor/d3.min.js"></script>
+<script src="vendor/scrollama.min.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  var margin = { top: 30, right: 30, bottom: 40, left: 60 };
+  var width = 560 - margin.left - margin.right;
+  var height = 420 - margin.top - margin.bottom;
+
+  var svg = d3.select("#chart-svg");
+  var g = svg.append("g").attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+  var xAxisG = g.append("g").attr("class", "axis x-axis").attr("transform", "translate(0," + height + ")");
+  var yAxisG = g.append("g").attr("class", "axis y-axis");
+
+  var nationalLinePath = g.append("path").attr("class", "vacancy-line");
+  var nationalAreaPath = g.append("path").attr("class", "vacancy-area");
+
+  var sectorColours = {
+    Technology: "#2563EB",
+    Healthcare: "#16A34A",
+    Finance: "#D97706",
+    Engineering: "#DC2626",
+    Education: "#7C3AED"
+  };
+  var sectorLineGroup = g.append("g").attr("class", "sector-lines");
+
+  d3.json("narrative_data.json").then(function (data) {
+    var national = data.national_vacancy_trend;
+    var quarters = national.map(function (d) { return d.Quarter; });
+
+    var x = d3.scalePoint().domain(quarters).range([0, width]);
+    var y = d3.scaleLinear()
+      .domain([0, d3.max(national, function (d) { return d.Vacancy_Count; }) * 1.15])
+      .range([height, 0]);
+
+    xAxisG.call(d3.axisBottom(x).tickValues(quarters.filter(function (d, i) { return i % 4 === 0; })))
+      .selectAll("text").attr("transform", "rotate(-30)").style("text-anchor", "end");
+    yAxisG.call(d3.axisLeft(y).ticks(5).tickFormat(function (d) { return (d / 1e6).toFixed(0) + "M"; }));
+
+    var line = d3.line()
+      .x(function (d) { return x(d.Quarter); })
+      .y(function (d) { return y(d.Vacancy_Count); })
+      .curve(d3.curveMonotoneX);
+
+    var area = d3.area()
+      .x(function (d) { return x(d.Quarter); })
+      .y0(height)
+      .y1(function (d) { return y(d.Vacancy_Count); })
+      .curve(d3.curveMonotoneX);
+
+    // event markers - Brexit, vacancy peak, both threshold rises
+    var events = [
+      { quarter: "2021-Q1", label: "Brexit (Jan 2021)", colour: "#6B7280" },
+      { quarter: "2022-Q2", label: "Vacancy peak (Apr 2022)", colour: "#16A34A" },
+      { quarter: "2024-Q2", label: "Threshold rise (Apr 2024)", colour: "#D97706" },
+      { quarter: "2025-Q2", label: "Threshold rise (Apr 2025)", colour: "#DC2626" }
+    ];
+
+    var eventLines = g.selectAll(".event-line")
+      .data(events)
+      .enter()
+      .append("line")
+      .attr("class", function (d) { return "event-line event-" + d.quarter; })
+      .attr("x1", function (d) { return x(d.quarter); })
+      .attr("x2", function (d) { return x(d.quarter); })
+      .attr("y1", 0)
+      .attr("y2", height)
+      .attr("stroke", function (d) { return d.colour; });
+
+    var eventLabels = g.selectAll(".event-label")
+      .data(events)
+      .enter()
+      .append("text")
+      .attr("class", function (d) { return "event-label event-" + d.quarter; })
+      .attr("x", function (d) { return x(d.quarter); })
+      .attr("y", function (d, i) { return i % 2 === 0 ? -22 : -8; })
+      .attr("text-anchor", "middle")
+      .attr("fill", function (d) { return d.colour; })
+      .text(function (d) { return d.label; });
+
+    var sectorViewActive = false;
+
+    function drawNationalUpTo(quarterIndex) {
+      var subset = national.slice(0, quarterIndex + 1);
+      nationalLinePath.datum(subset).attr("d", line);
+      nationalAreaPath.datum(subset).attr("d", area);
+      nationalLinePath.style("opacity", 1);
+      nationalAreaPath.style("opacity", 1);
+      if (sectorViewActive) {
+        sectorLineGroup.style("opacity", 0);
+        restoreNationalAxes();
+        sectorViewActive = false;
+      }
+    }
+
+    function showEventsUpTo(quarterList) {
+      events.forEach(function (e) {
+        var visible = quarterList.indexOf(e.quarter) !== -1;
+        g.select(".event-" + e.quarter.replace(".event-line", "")).classed("visible", visible);
+      });
+      g.selectAll(".event-line").classed("visible", function (d) { return quarterList.indexOf(d.quarter) !== -1; });
+      g.selectAll(".event-label").classed("visible", function (d) { return quarterList.indexOf(d.quarter) !== -1; });
+    }
+
+    function showSectorLines() {
+      nationalLinePath.style("opacity", 0);
+      nationalAreaPath.style("opacity", 0);
+      g.selectAll(".event-line").classed("visible", false);
+      g.selectAll(".event-label").classed("visible", false);
+
+      var visaData = data.visa_grants_by_sector_year;
+      var years = [2021, 2022, 2023, 2024, 2025];
+      var sectors = Object.keys(sectorColours);
+
+      var yLine = d3.scaleLinear()
+        .domain([0, d3.max(visaData, function (d) { return d.Visa_Grants; }) * 1.15])
+        .range([height, 0]);
+      var xLine = d3.scalePoint().domain(years).range([0, width]);
+
+      // updating both axes to actually match the new scale - otherwise
+      // the axis labels stay showing the old vacancy-count numbers while
+      // the lines are plotted against a completely different scale,
+      // which would show the reader numbers that don't mean anything
+      xAxisG.transition().duration(400).call(d3.axisBottom(xLine));
+      yAxisG.transition().duration(400).call(d3.axisLeft(yLine).ticks(5).tickFormat(function (d) { return (d / 1000).toFixed(0) + "k"; }));
+
+      sectorLineGroup.selectAll("*").remove();
+      var legend = sectorLineGroup.append("g").attr("class", "sector-label visible").attr("transform", "translate(" + (width - 110) + ", 10)");
+      sectors.forEach(function (sector, sectorIndex) {
+        var row = legend.append("g").attr("transform", "translate(0, " + (sectorIndex * 18) + ")");
+        row.append("rect").attr("width", 10).attr("height", 10).attr("fill", sectorColours[sector]).attr("rx", 2);
+        row.append("text").attr("x", 16).attr("y", 9).attr("font-size", "11px").attr("font-weight", "600").attr("fill", "#111827").text(sector);
+      });
+
+      sectors.forEach(function (sector, sectorIndex) {
+        var sectorSeries = visaData.filter(function (d) { return d.Sector === sector; })
+          .sort(function (a, b) { return a.Year - b.Year; });
+
+        var sectorLine = d3.line()
+          .x(function (d) { return xLine(d.Year); })
+          .y(function (d) { return yLine(d.Visa_Grants); })
+          .curve(d3.curveMonotoneX);
+
+        sectorLineGroup.append("path")
+          .datum(sectorSeries)
+          .attr("class", "sector-line visible")
+          .attr("d", sectorLine)
+          .attr("stroke", sectorColours[sector]);
+      });
+      sectorLineGroup.style("opacity", 1);
+      sectorViewActive = true;
+    }
+
+    function restoreNationalAxes() {
+      xAxisG.transition().duration(400).call(d3.axisBottom(x).tickValues(quarters.filter(function (d, i) { return i % 4 === 0; })));
+      yAxisG.transition().duration(400).call(d3.axisLeft(y).ticks(5).tickFormat(function (d) { return (d / 1e6).toFixed(0) + "M"; }));
+    }
+
+    // ---- Scrollama wiring ----
+    var scroller = scrollama();
+
+    function handleStepEnter(response) {
+      var stepNum = +response.element.dataset.step;
+      d3.selectAll(".step").classed("is-active", false);
+      d3.select(response.element).classed("is-active", true);
+
+      if (stepNum === 1) {
+        drawNationalUpTo(3); // through 2021-Q4, pre-disruption baseline
+        showEventsUpTo([]);
+      } else if (stepNum === 2) {
+        drawNationalUpTo(3);
+        showEventsUpTo(["2021-Q1"]);
+      } else if (stepNum === 3) {
+        drawNationalUpTo(5); // through 2022-Q2
+        showEventsUpTo(["2021-Q1", "2022-Q2"]);
+      } else if (stepNum === 4) {
+        drawNationalUpTo(quarters.length - 1);
+        showEventsUpTo(["2021-Q1", "2022-Q2", "2024-Q2", "2025-Q2"]);
+      } else if (stepNum === 5) {
+        showSectorLines();
+      }
+    }
+
+    scroller
+      .setup({
+        step: ".step",
+        offset: 0.6,
+      })
+      .onStepEnter(handleStepEnter);
+
+    window.addEventListener("resize", scroller.resize);
+
+    // initial state
+    drawNationalUpTo(3);
+  }).catch(function (err) {
+    console.error("Failed to load narrative data:", err);
+  });
+})();
+</script>
+</body>
+</html>

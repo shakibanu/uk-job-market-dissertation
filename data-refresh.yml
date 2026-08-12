@@ -1,0 +1,92 @@
+name: Automated Data Refresh
+
+# Adzuna refreshes weekly (its data is postings, which change fast).
+# NOMIS and the manual-source check run monthly (NOMIS releases
+# quarterly anyway, and the Home Office/ONS check just needs to catch a
+# new release whenever one comes out, not chase it daily).
+on:
+  schedule:
+    - cron: "0 6 * * 1"      # every Monday at 06:00 UTC - Adzuna
+    - cron: "0 7 1 * *"      # 1st of every month at 07:00 UTC - NOMIS + manual check
+  workflow_dispatch: {}       # lets me trigger a run manually from GitHub's UI, useful for testing this
+
+jobs:
+  refresh-adzuna:
+    if: github.event.schedule == '0 6 * * 1' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install requests pandas
+
+      - name: Refresh Adzuna data
+        env:
+          ADZUNA_APP_ID: ${{ secrets.ADZUNA_APP_ID }}
+          ADZUNA_APP_KEY: ${{ secrets.ADZUNA_APP_KEY }}
+        run: python scripts/refresh_adzuna.py
+
+      - name: Update last-refreshed timestamp
+        run: python scripts/update_timestamp.py adzuna
+
+      - name: Clear the startup cache so the dashboard recomputes with fresh data
+        run: python startup_cache.py
+
+      - name: Commit and push if anything changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/Adzuna_Clean.csv data/last_refreshed.json
+          git diff --quiet && git diff --staged --quiet || git commit -m "Automated weekly Adzuna refresh"
+          git push
+
+  refresh-nomis-and-check-manual-sources:
+    if: github.event.schedule == '0 7 1 * *' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install requests pandas
+
+      - name: Refresh NOMIS vacancy data
+        run: python scripts/refresh_nomis.py
+
+      - name: Update last-refreshed timestamp
+        run: python scripts/update_timestamp.py nomis
+
+      - name: Clear the startup cache so the dashboard recomputes with fresh data
+        run: python startup_cache.py
+
+      - name: Check for new Home Office / ONS releases
+        run: python scripts/check_manual_sources.py
+
+      - name: Open an issue if a manual source may have updated
+        if: hashFiles('manual_source_flags.txt') != ''
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const flags = fs.readFileSync('manual_source_flags.txt', 'utf8');
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: 'Possible new Home Office / ONS data release',
+              body: 'The automated check found a release that may be newer than what\'s currently in the project:\n\n' + flags + '\n\nThis needs a manual check and re-clean, since the file format can change between releases.'
+            });
+
+      - name: Commit and push if anything changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/NOMIS_Vacancy_Statistics.csv data/last_refreshed.json
+          git diff --quiet && git diff --staged --quiet || git commit -m "Automated monthly NOMIS refresh"
+          git push
