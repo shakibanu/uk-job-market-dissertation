@@ -3,3 +3,4 @@ __pycache__/
 .DS_Store
 data/BasicCompanyDataAsOneFile-2026-07-01.csv
 data/CompaniesHouseData.zip.zip
+startup_cache/
