@@ -12,19 +12,21 @@ default styling.
 import dash_bootstrap_components as dbc
 import pandas as pd
 import plotly.graph_objects as go
-from dash import Input, Output, html
+from dash import Input, Output, State, html
 
 from app_instance import app
 from data_loader import (
     master_df, sponsors_df, SECTORS, SALARY_THRESHOLDS,
     SURFACE, BORDER, TEXT, TEXT_SECONDARY, BLUE, TEAL, AMBER, DANGER,
     gdp_df, tuition_df, living_cost_df,
+    mac_stay_rate_df, REGION_MAPPED_COUNT, REGION_TOTAL_COUNT,
+    nationality_df, ALL_POSSIBLE_QUARTERS,
 )
 from sarima_forecast import SARIMA_RESULTS
 from roi_calculator import calculate_roi, get_sponsorship_activity_ranking
 from sponsorship_classifier import SPONSORS_WITH_SECTOR, FIT_F1_SCORE, FIT_FEATURE_IMPORTANCE, rank_companies_by_sector
 from skills_extraction import TOP_SKILLS_BY_SECTOR
-from tabs import overview_tab, sectors_tab, companies_tab, salary_tab, roi_tab, fit_calculator_tab
+from tabs import overview_tab, sectors_tab, companies_tab, salary_tab, roi_tab, fit_calculator_tab, regional_tab, sources_tab, nationality_tab
 
 
 # Apply the same layout and styling to every chart
@@ -55,6 +57,9 @@ def render_tab(tab):
         "tab-salary": salary_tab,
         "tab-roi": roi_tab,
         "tab-fit": fit_calculator_tab,
+        "tab-regional": regional_tab,
+        "tab-nationality": nationality_tab,
+        "tab-sources": sources_tab,
     }.get(tab, overview_tab)
 
 
@@ -136,7 +141,11 @@ def update_sarima_diagnostics(sector):
     sarima_info = SARIMA_RESULTS[sector]
     p, d, q = sarima_info["order"]
     P, D, Q, m = sarima_info["seasonal_order"]
-    is_flat = len(set(sarima_info["forecast"])) == 1
+    # checking the actual seasonal terms (P, D, Q) rather than whether the
+    # forecast happens to be flat - a non-seasonal AR/MA term can still
+    # produce a varying forecast (e.g. a trend) with zero real seasonality,
+    # so flatness isn't a reliable signal of whether seasonality was found
+    has_seasonal_component = P != 0 or D != 0 or Q != 0
 
     rows = [
         html.Div([
@@ -150,18 +159,19 @@ def update_sarima_diagnostics(sector):
             html.Span(f"{sarima_info['bic']}", style={"fontWeight": "600"}),
         ], style={"fontSize": "13px", "marginBottom": "8px"}),
     ]
-    if is_flat:
+    if not has_seasonal_component:
         rows.append(html.Div(
-            "⚠ auto_arima did not detect a seasonal pattern for this sector with only "
-            "20 quarters of data — the forecast is effectively flat (a simple trend "
-            "projection, not a seasonal model). This is a genuine result, not an error; "
-            "see the Methodology's limitations for why short series constrain SARIMA fitting.",
+            "⚠ No seasonal component detected for this sector with only 20 quarters "
+            "of data — auto_arima selected a non-seasonal model, so the forecast is "
+            "a trend projection rather than a seasonal one. This is a genuine result, "
+            "not an error; see the Methodology's limitations for why short series "
+            "constrain SARIMA fitting.",
             style={"fontSize": "12px", "color": AMBER, "background": "rgba(217,119,6,0.08)",
                    "padding": "10px", "borderRadius": "8px"},
         ))
     else:
         rows.append(html.Div(
-            "Seasonal pattern detected. Shaded bands show the 80% (darker) and 95% "
+            "Seasonal component detected. Shaded bands show the 80% (darker) and 95% "
             "(lighter) confidence intervals — forecasts get less certain further out.",
             style={"fontSize": "12px", "color": TEXT_SECONDARY},
         ))
@@ -442,7 +452,18 @@ def update_roi_results(country, sector, region):
         xaxis_title="Years after graduating",
         yaxis_title="£",
     )
-    return results_display, style_fig(fig)
+    # This chart updates on every dropdown change (country, sector, region),
+    # which can happen faster than style_fig()'s 400ms transition duration.
+    # When a new figure arrives while Plotly is still animating the
+    # previous one, the visible chart (including the title) can render
+    # one selection behind the real data - confirmed by testing rapid
+    # selections and checking the actual rendered SVG text, not just the
+    # underlying figure object. Turning the transition off for this
+    # specific chart fixes it, without touching the calculation logic or
+    # any other chart's smooth-transition behaviour.
+    styled_fig = style_fig(fig)
+    styled_fig.update_layout(transition={"duration": 0})
+    return results_display, styled_fig
 
 
 @app.callback(
@@ -494,3 +515,225 @@ def update_fit_calculator(sector):
     )
 
     return results_display, model_card
+
+
+@app.callback(
+    Output("regional-heatmap-chart", "figure"),
+    Output("regional-coverage-note", "children"),
+    Input("regional-sector-filter", "value"),
+)
+def update_regional_heatmap(sector_filter):
+    # Licensed sponsor organisations by region - this is NOT visa grant
+    # data, since the Home Office doesn't publish Skilled Worker visas
+    # by region. This counts where sponsor companies are registered.
+    results = sponsors_df[sponsors_df["Region"].notna()]
+    if sector_filter:
+        results = results[results["Sector"] == sector_filter]
+
+    region_counts = results["Region"].value_counts().sort_values(ascending=True)
+
+    fig = go.Figure()
+    fig.add_trace(go.Bar(
+        x=region_counts.values,
+        y=region_counts.index,
+        orientation="h",
+        marker_color=BLUE,
+        text=region_counts.values,
+        texttemplate="%{text:,}",
+        textposition="outside",
+        hovertemplate="%{y}: %{x:,} sponsors<extra></extra>",
+    ))
+    title_suffix = f" — {sector_filter}" if sector_filter else " — all sectors"
+    fig.update_layout(title=f"Licensed sponsor organisations by region{title_suffix}")
+    fig.update_xaxes(title="Number of sponsors")
+
+    # the coverage note reflects the current filter, not just the overall
+    # dataset total, since filtering by sector changes how many results
+    # are actually shown in the chart above
+    shown = len(results)
+    if sector_filter:
+        coverage_text = (
+            f"Showing {shown:,} sponsors in {sector_filter} with a known region. "
+            f"Overall, {REGION_MAPPED_COUNT:,} of {REGION_TOTAL_COUNT:,} sponsors "
+            f"({REGION_MAPPED_COUNT/REGION_TOTAL_COUNT*100:.2f}%) have a matched region."
+        )
+    else:
+        coverage_text = (
+            f"Coverage: {REGION_MAPPED_COUNT:,} of {REGION_TOTAL_COUNT:,} sponsors "
+            f"({REGION_MAPPED_COUNT/REGION_TOTAL_COUNT*100:.2f}%) matched to a region "
+            f"from the City field. The remaining "
+            f"{REGION_TOTAL_COUNT-REGION_MAPPED_COUNT:,} are mostly small towns not "
+            f"in the mapping, or genuinely ambiguous place names (e.g. Richmond, "
+            f"Newport) that were deliberately left unmapped rather than guessed."
+        )
+    return style_fig(fig), coverage_text
+
+
+@app.callback(Output("mac-stay-rate-chart", "figure"), Input("main-tabs", "value"))
+def update_mac_stay_rate_chart(_):
+    # The MAC's Skilled Worker 5-year stay rate by region - a retention
+    # measure, kept completely separate from the sponsor count above.
+    # Sorted the same way (ascending) so the two charts are easy to
+    # visually compare region by region without implying they're the
+    # same kind of number.
+    data = mac_stay_rate_df.sort_values("Stay_Rate_Percent", ascending=True)
+
+    fig = go.Figure()
+    fig.add_trace(go.Bar(
+        x=data["Stay_Rate_Percent"],
+        y=data["Region"],
+        orientation="h",
+        marker_color=TEAL,
+        text=data["Stay_Rate_Percent"],
+        texttemplate="%{text}%",
+        textposition="outside",
+        hovertemplate="%{y}: %{x}%% stay rate<extra></extra>",
+    ))
+    fig.update_layout(title="Skilled Worker 5-year stay rate by region (MAC, 2026)")
+    fig.update_xaxes(title="% still holding valid immigration status after 5 years", range=[0, 100])
+    return style_fig(fig)
+
+
+@app.callback(
+    Output("nationality-filter-dropdown", "options"),
+    Input("nationality-sector-dropdown", "value"),
+)
+def update_nationality_filter_options(sector):
+    # only listing nationalities that actually have data for this sector,
+    # ranked by total grants so the most relevant ones are easiest to find
+    # in the dropdown rather than scrolling through all 187
+    sector_data = nationality_df[nationality_df["Sector"] == sector]
+    totals = sector_data.groupby("Nationality")["Grants"].sum().sort_values(ascending=False)
+    return [{"label": n, "value": n} for n in totals.index]
+
+
+@app.callback(
+    Output("nationality-ranking-chart", "figure"),
+    Input("nationality-sector-dropdown", "value"),
+    Input("nationality-filter-dropdown", "value"),
+)
+def update_nationality_ranking(sector, highlighted_nationality):
+    # ranking is a total across every available quarter (2021 Q1-2026 Q1,
+    # excluding the genuinely missing 2024 Q2-Q3) - this doesn't claim a
+    # continuous trend, it's just "who's been sponsored in this sector
+    # across the whole period we have real data for"
+    sector_data = nationality_df[nationality_df["Sector"] == sector]
+    totals = sector_data.groupby("Nationality")["Grants"].sum().sort_values(ascending=False)
+
+    top10 = totals.head(10)
+    # if the selected nationality isn't already in the top 10, showing top
+    # 9 + the selected one instead of top 10 - otherwise a user could pick
+    # a nationality from the dropdown that never appears in the chart at
+    # all, with nothing to actually highlight
+    if highlighted_nationality and highlighted_nationality not in top10.index and highlighted_nationality in totals.index:
+        display = pd.concat([top10.head(9), totals[[highlighted_nationality]]])
+    else:
+        display = top10
+    display = display.sort_values(ascending=True)
+
+    colours = [AMBER if n == highlighted_nationality else BLUE for n in display.index]
+
+    fig = go.Figure()
+    fig.add_trace(go.Bar(
+        x=display.values, y=display.index, orientation="h",
+        marker_color=colours,
+        text=display.values, texttemplate="%{text:,}", textposition="outside",
+        hovertemplate="%{y}: %{x:,} grants<extra></extra>",
+    ))
+    fig.update_layout(title=f"Top nationalities sponsored — {sector} (all available quarters combined)")
+    fig.update_xaxes(title="Total visa grants")
+    return style_fig(fig)
+
+
+@app.callback(
+    Output("nationality-trend-raw", "data"),
+    Input("nationality-sector-dropdown", "value"),
+    Input("nationality-filter-dropdown", "value"),
+)
+def update_nationality_trend(sector, highlighted_nationality):
+    sector_data = nationality_df[nationality_df["Sector"] == sector]
+    if highlighted_nationality:
+        sector_data = sector_data[sector_data["Nationality"] == highlighted_nationality]
+
+    quarterly = sector_data.groupby(["Quarter", "Source_Dataset"])["Grants"].sum().reset_index()
+
+    # building each source's series against the FULL quarter list, so the
+    # 2024 Q2-Q3 gap shows up as real empty space on the x-axis rather
+    # than the chart just skipping straight over it
+    soc2010 = quarterly[quarterly["Source_Dataset"] == "SOC 2010"].set_index("Quarter")["Grants"]
+    soc2020 = quarterly[quarterly["Source_Dataset"] == "SOC 2020"].set_index("Quarter")["Grants"]
+    soc2010_y = [soc2010.get(q) for q in ALL_POSSIBLE_QUARTERS]
+    soc2020_y = [soc2020.get(q) for q in ALL_POSSIBLE_QUARTERS]
+
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(
+        x=ALL_POSSIBLE_QUARTERS, y=soc2010_y, mode="lines+markers", name="SOC 2010 dataset",
+        line=dict(color=BLUE, width=2), marker=dict(size=5),
+        connectgaps=False, hovertemplate="%{x}: %{y:,} grants<extra></extra>",
+    ))
+    fig.add_trace(go.Scatter(
+        x=ALL_POSSIBLE_QUARTERS, y=soc2020_y, mode="lines+markers", name="SOC 2020 dataset",
+        line=dict(color=TEAL, width=2), marker=dict(size=5),
+        connectgaps=False, hovertemplate="%{x}: %{y:,} grants<extra></extra>",
+    ))
+
+    title_suffix = f" — {highlighted_nationality}" if highlighted_nationality else " — all nationalities"
+    fig.update_layout(title=f"{sector} visa grants by quarter{title_suffix}")
+    fig.update_xaxes(title="Quarter", tickangle=-90, tickfont=dict(size=9))
+    fig.update_yaxes(title="Grants")
+
+    # marking exactly where the two official datasets meet, so the reader
+    # sees this as a source change rather than a smooth continuation
+    # this chart updates every time the sector or nationality dropdown
+    # changes, which can happen faster than style_fig()'s 400ms transition -
+    # confirmed by testing rapid consecutive nationality selections and
+    # checking the actual rendered SVG title, same issue and same fix as
+    # the ROI chart. Local to this chart only.
+    styled_fig = style_fig(fig)
+    styled_fig.update_layout(transition={"duration": 0})
+
+    # returning the figure together with exactly which sector/nationality
+    # it was computed for (straight from this callback's own arguments,
+    # not a separate counter that could get out of sync) - the clientside
+    # callback below compares this against whatever is CURRENTLY selected
+    # before displaying it, so a slow, older response can't overwrite a
+    # newer one just because it happens to arrive later
+    return {"figure": styled_fig.to_dict(), "sector": sector, "nationality": highlighted_nationality}
+
+
+# This clientside callback fixes a stale-response race condition on the
+# nationality trend chart: if a user changes the nationality dropdown
+# quickly, the server can take slightly different amounts of time to
+# respond to each request, so an older response can arrive after a
+# newer one. Confirmed this with a stress test (artificially varying
+# server response time) - without this fix, 5-7 out of 7 rapid
+# selections displayed the wrong, stale nationality.
+#
+# This runs in the browser, comparing the sector/nationality the
+# incoming response was actually computed for against whatever is
+# CURRENTLY selected in the dropdowns right now - if they don't match,
+# the response is stale (the user has moved on to a different
+# selection since this request was made) and gets ignored instead of
+# overwriting the chart with outdated data.
+app.clientside_callback(
+    """
+    function(rawData, currentSector, currentNationality) {
+        if (!rawData) {
+            return window.dash_clientside.no_update;
+        }
+        // treating null and undefined as the same "nothing selected" state -
+        // JavaScript considers them different values by default, which was
+        // silently blocking every comparison when no nationality is picked
+        const normalise = function(v) { return (v === undefined || v === null) ? null : v; };
+        if (normalise(rawData.sector) !== normalise(currentSector) ||
+            normalise(rawData.nationality) !== normalise(currentNationality)) {
+            return window.dash_clientside.no_update;
+        }
+        return rawData.figure;
+    }
+    """,
+    Output("nationality-trend-chart", "figure"),
+    Input("nationality-trend-raw", "data"),
+    State("nationality-sector-dropdown", "value"),
+    State("nationality-filter-dropdown", "value"),
+)

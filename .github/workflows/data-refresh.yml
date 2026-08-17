@@ -1,9 +1,10 @@
 name: Automated Data Refresh
 
 # Adzuna refreshes weekly (its data is postings, which change fast).
-# NOMIS and the manual-source check run monthly (NOMIS releases
-# quarterly anyway, and the Home Office/ONS check just needs to catch a
-# new release whenever one comes out, not chase it daily).
+# The manual-source check runs monthly, flagging possible new Home
+# Office, ONS ASHE, or VACS02 releases for manual review - none of
+# these are downloaded or merged automatically, since their file
+# formats need a human check before rebuilding anything.
 on:
   schedule:
     - cron: "0 6 * * 1"      # every Monday at 06:00 UTC - Adzuna
@@ -44,7 +45,13 @@ jobs:
           git diff --quiet && git diff --staged --quiet || git commit -m "Automated weekly Adzuna refresh"
           git push
 
-  refresh-nomis-and-check-manual-sources:
+  check-manual-sources:
+    # renamed from refresh-nomis-and-check-manual-sources - the NOMIS
+    # refresh step was removed (it queried the wrong workforce-jobs
+    # dataset, the same one behind the VACS02 data quality issue, and
+    # wrote to a file that no longer exists). This job now only checks
+    # for new manual-source releases and flags them - it never
+    # downloads or merges anything automatically.
     if: github.event.schedule == '0 7 1 * *' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
@@ -57,16 +64,7 @@ jobs:
       - name: Install dependencies
         run: pip install requests pandas
 
-      - name: Refresh NOMIS vacancy data
-        run: python scripts/refresh_nomis.py
-
-      - name: Update last-refreshed timestamp
-        run: python scripts/update_timestamp.py nomis
-
-      - name: Clear the startup cache so the dashboard recomputes with fresh data
-        run: python startup_cache.py
-
-      - name: Check for new Home Office / ONS releases
+      - name: Check for new Home Office / ONS / VACS02 releases
         run: python scripts/check_manual_sources.py
 
       - name: Open an issue if a manual source may have updated
@@ -79,14 +77,6 @@ jobs:
             await github.rest.issues.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              title: 'Possible new Home Office / ONS data release',
-              body: 'The automated check found a release that may be newer than what\'s currently in the project:\n\n' + flags + '\n\nThis needs a manual check and re-clean, since the file format can change between releases.'
+              title: 'Possible new Home Office / ONS / VACS02 data release',
+              body: 'The automated check found a release that may be newer than what\'s currently in the project:\n\n' + flags + '\n\nThis needs a manual check and re-clean, since the file format can change between releases. VACS02 in particular is not auto-downloaded or auto-merged, given how much manual verification its rolling-quarter structure needs.'
             });
-
-      - name: Commit and push if anything changed
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/NOMIS_Vacancy_Statistics.csv data/last_refreshed.json
-          git diff --quiet && git diff --staged --quiet || git commit -m "Automated monthly NOMIS refresh"
-          git push

@@ -248,7 +248,7 @@
           <div class="step-eyebrow">Chapter 1 &middot; Before Brexit</div>
           <h2>A different starting point</h2>
           <p>Before January 2021, EU citizens could work in the UK without needing a visa at all. Employer demand for sponsorship was low, and mostly limited to specialist roles from outside the EU.</p>
-          <p>UK vacancies sat around 12.3 million at the start of 2021 &mdash; the baseline this whole story moves away from.</p>
+          <p>UK vacancies across these five sectors sat around 264,000 at the start of 2021 &mdash; the baseline this whole story moves away from.</p>
         </div>
       </div>
 
@@ -298,12 +298,12 @@
     <div class="hero-eyebrow">Chapter 6 &middot; Your path forward</div>
     <h2>This data shows what happened. Now see what it means for you.</h2>
     <p>Explore your own sector, search real licensed sponsors, and get a realistic picture of your own chances &mdash; not just the national trend.</p>
-    <a href="http://localhost:8050" class="cta-button">Explore the dashboard &rarr;</a>
+    <a href="/" class="cta-button">Explore the dashboard &rarr;</a>
     <a href="#sources" class="sources-link">View data sources</a>
   </section>
 
-<script src="vendor/d3.min.js"></script>
-<script src="vendor/scrollama.min.js"></script>
+<script src="/story/vendor/d3.min.js"></script>
+<script src="/story/vendor/scrollama.min.js"></script>
 <script>
 (function () {
   "use strict";
@@ -330,7 +330,7 @@
   };
   var sectorLineGroup = g.append("g").attr("class", "sector-lines");
 
-  d3.json("narrative_data.json").then(function (data) {
+  d3.json("/story/narrative_data.json").then(function (data) {
     var national = data.national_vacancy_trend;
     var quarters = national.map(function (d) { return d.Quarter; });
 
@@ -341,7 +341,7 @@
 
     xAxisG.call(d3.axisBottom(x).tickValues(quarters.filter(function (d, i) { return i % 4 === 0; })))
       .selectAll("text").attr("transform", "rotate(-30)").style("text-anchor", "end");
-    yAxisG.call(d3.axisLeft(y).ticks(5).tickFormat(function (d) { return (d / 1e6).toFixed(0) + "M"; }));
+    yAxisG.call(d3.axisLeft(y).ticks(5).tickFormat(function (d) { return (d / 1000).toFixed(0) + "k"; }));
 
     var line = d3.line()
       .x(function (d) { return x(d.Quarter); })
@@ -459,7 +459,7 @@
 
     function restoreNationalAxes() {
       xAxisG.transition().duration(400).call(d3.axisBottom(x).tickValues(quarters.filter(function (d, i) { return i % 4 === 0; })));
-      yAxisG.transition().duration(400).call(d3.axisLeft(y).ticks(5).tickFormat(function (d) { return (d / 1e6).toFixed(0) + "M"; }));
+      yAxisG.transition().duration(400).call(d3.axisLeft(y).ticks(5).tickFormat(function (d) { return (d / 1000).toFixed(0) + "k"; }));
     }
 
     // ---- Scrollama wiring ----

@@ -20,6 +20,7 @@ Shakira Banu Shaffi - 19377581
 from dash import dcc, html
 from app_instance import app, server
 from dashboard_components import feather_icon
+import narrative_routes  # noqa: F401 - registers the /story route on the same server
 
 
 def tab_label(text, icon_name):
@@ -43,6 +44,15 @@ app.layout = html.Div(
                         html.P("Sponsorship and salary intelligence · 2021-2026", className="app-subtitle"),
                     ]
                 ),
+                # Link to the scrollytelling narrative - a real page (not a
+                # Dash tab) since it's served as its own route on the same
+                # server, so this is a normal link rather than a tab switch
+                html.A(
+                    [feather_icon("book-open", size=14), html.Span("The Story")],
+                    href="/story",
+                    className="story-link",
+                    style={"display": "flex", "alignItems": "center", "gap": "6px"},
+                ),
                 dcc.Tabs(
                     id="main-tabs",
                     value="tab-overview",
@@ -52,8 +62,11 @@ app.layout = html.Div(
                         dcc.Tab(label=tab_label("Sectors", "bar-chart-2"), value="tab-sectors", className="tab", selected_className="tab--selected"),
                         dcc.Tab(label=tab_label("Companies", "briefcase"), value="tab-companies", className="tab", selected_className="tab--selected"),
                         dcc.Tab(label=tab_label("Salary", "trending-up"), value="tab-salary", className="tab", selected_className="tab--selected"),
+                        dcc.Tab(label=tab_label("Regional", "map"), value="tab-regional", className="tab", selected_className="tab--selected"),
                         dcc.Tab(label=tab_label("Is the UK Worth It", "percent"), value="tab-roi", className="tab", selected_className="tab--selected"),
                         dcc.Tab(label=tab_label("Sponsorship Fit", "check"), value="tab-fit", className="tab", selected_className="tab--selected"),
+                        dcc.Tab(label=tab_label("Nationality", "globe"), value="tab-nationality", className="tab", selected_className="tab--selected"),
+                        dcc.Tab(label=tab_label("Sources", "file-text"), value="tab-sources", className="tab", selected_className="tab--selected"),
                     ],
                 ),
             ],

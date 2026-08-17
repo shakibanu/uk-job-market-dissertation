@@ -2,83 +2,83 @@
   "national_vacancy_trend": [
     {
       "Quarter": "2021-Q1",
-      "Vacancy_Count": 12339417
+      "Vacancy_Count": 264000
     },
     {
       "Quarter": "2021-Q2",
-      "Vacancy_Count": 12424413
+      "Vacancy_Count": 318000
     },
     {
       "Quarter": "2021-Q3",
-      "Vacancy_Count": 12466138
+      "Vacancy_Count": 393000
     },
     {
       "Quarter": "2021-Q4",
-      "Vacancy_Count": 12499260
+      "Vacancy_Count": 425000
     },
     {
       "Quarter": "2022-Q1",
-      "Vacancy_Count": 12580968
+      "Vacancy_Count": 449000
     },
     {
       "Quarter": "2022-Q2",
-      "Vacancy_Count": 12647800
+      "Vacancy_Count": 464000
     },
     {
       "Quarter": "2022-Q3",
-      "Vacancy_Count": 12571115
+      "Vacancy_Count": 452000
     },
     {
       "Quarter": "2022-Q4",
-      "Vacancy_Count": 12640349
+      "Vacancy_Count": 422000
     },
     {
       "Quarter": "2023-Q1",
-      "Vacancy_Count": 12831168
+      "Vacancy_Count": 402000
     },
     {
       "Quarter": "2023-Q2",
-      "Vacancy_Count": 12848827
+      "Vacancy_Count": 372000
     },
     {
       "Quarter": "2023-Q3",
-      "Vacancy_Count": 12811009
+      "Vacancy_Count": 353000
     },
     {
       "Quarter": "2023-Q4",
-      "Vacancy_Count": 12945666
+      "Vacancy_Count": 343000
     },
     {
       "Quarter": "2024-Q1",
-      "Vacancy_Count": 13046255
+      "Vacancy_Count": 334000
     },
     {
       "Quarter": "2024-Q2",
-      "Vacancy_Count": 13045727
+      "Vacancy_Count": 326000
     },
     {
       "Quarter": "2024-Q3",
-      "Vacancy_Count": 13155502
+      "Vacancy_Count": 313000
     },
     {
       "Quarter": "2024-Q4",
-      "Vacancy_Count": 13195244
+      "Vacancy_Count": 298000
     },
     {
       "Quarter": "2025-Q1",
-      "Vacancy_Count": 13272227
+      "Vacancy_Count": 296000
     },
     {
       "Quarter": "2025-Q2",
-      "Vacancy_Count": 13167867
+      "Vacancy_Count": 275000
     },
     {
       "Quarter": "2025-Q3",
-      "Vacancy_Count": 13080720
+      "Vacancy_Count": 275000
     },
     {
       "Quarter": "2025-Q4",
-      "Vacancy_Count": 13114545
+      "Vacancy_Count": 276000
     }
   ],
   "visa_grants_by_sector_year": [
