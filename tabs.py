@@ -58,6 +58,17 @@ overview_tab = html.Div(
             className="panel",
             style={"display": "flex", "justifyContent": "space-between", "alignItems": "center"},
         ),
+        html.Div(
+            [
+                html.Div("How does every sector compare at once?", style={
+                    "fontFamily": "Inter, sans-serif", "fontSize": "14px",
+                    "fontWeight": "700", "color": TEXT, "marginBottom": "4px",
+                }),
+                dcc.Loading(dcc.Graph(id="small-multiples-chart", config={"displayModeBar": False}), type="circle", color=BLUE),
+            ],
+            className="panel",
+            style={"marginTop": "14px"},
+        ),
     ],
     className="tab-body",
 )
@@ -72,7 +83,14 @@ sectors_tab = html.Div(
             clearable=False,
             style={"maxWidth": "280px", "marginBottom": "20px"},
         ),
-        html.Div(dcc.Graph(id="sector-vacancy-chart", config={"displayModeBar": False}), className="panel", style={"marginBottom": "20px"}),
+        dcc.Loading(html.Div(dcc.Graph(id="sector-vacancy-chart", config={"displayModeBar": False}), className="panel", style={"marginBottom": "20px"}), type="circle", color=BLUE),
+        html.Div(
+            [
+                html.Button("Export this chart as PNG", id="sector-chart-export-button", className="export-button"),
+                dcc.Download(id="sector-chart-export-download"),
+            ],
+            style={"marginBottom": "20px", "marginTop": "-10px"},
+        ),
         html.Div(id="sarima-diagnostics", className="panel", style={"marginBottom": "20px"}),
         html.Div(
             [
@@ -84,7 +102,7 @@ sectors_tab = html.Div(
                     "Skilled Worker visa grants by sector, 2021-2025. Drag the slider or press play.",
                     style={"fontSize": "12px", "color": TEXT_SECONDARY, "marginBottom": "10px"},
                 ),
-                dcc.Graph(id="sponsorship-comparison-chart", config={"displayModeBar": False}),
+                dcc.Loading(dcc.Graph(id="sponsorship-comparison-chart", config={"displayModeBar": False}), type="circle", color=BLUE),
             ],
             className="panel",
             style={"marginBottom": "20px"},
@@ -101,7 +119,7 @@ sectors_tab = html.Div(
                     "skills, not a live or exhaustive analysis.",
                     style={"fontSize": "12px", "color": TEXT_SECONDARY, "marginBottom": "10px"},
                 ),
-                dcc.Graph(id="skills-chart", config={"displayModeBar": False}),
+                dcc.Loading(dcc.Graph(id="skills-chart", config={"displayModeBar": False}), type="circle", color=BLUE),
             ],
             className="panel",
         ),
@@ -111,6 +129,7 @@ sectors_tab = html.Div(
 
 companies_tab = html.Div(
     [
+        dcc.Store(id="bookmarked-companies", storage_type="session"),
         html.Div(
             [
                 html.Div(
@@ -138,10 +157,29 @@ companies_tab = html.Div(
                         ),
                     ]
                 ),
+                html.Div(
+                    [
+                        html.Label(" "),
+                        dcc.Checklist(
+                            id="favourites-only-toggle",
+                            options=[{"label": " Show bookmarked only", "value": "favourites"}],
+                            value=[],
+                            style={"marginTop": "8px"},
+                        ),
+                    ],
+                    style={"marginLeft": "24px"},
+                ),
             ],
             style={"display": "flex", "marginBottom": "20px"},
         ),
         html.Div(id="company-table-container", className="panel"),
+        html.Div(
+            [
+                html.Button("Export current results as CSV", id="company-export-button", className="export-button"),
+                dcc.Download(id="company-export-download"),
+            ],
+            style={"marginTop": "10px"},
+        ),
         html.Div(
             "Active job count is matched by company name against Adzuna postings, "
             "so it's only available for a small number of companies. Sector is "
@@ -164,13 +202,41 @@ salary_tab = html.Div(
             clearable=False,
             style={"maxWidth": "200px", "marginBottom": "20px"},
         ),
-        html.Div(dcc.Graph(id="salary-chart", config={"displayModeBar": False}), className="panel"),
+        dcc.Loading(html.Div(dcc.Graph(id="salary-chart", config={"displayModeBar": False}), className="panel"), type="circle", color=BLUE),
         html.Div(
             [
                 html.Span("● ", style={"color": DANGER}),
                 "Below visa salary threshold for the selected year — role would not qualify for Skilled Worker sponsorship at that salary.",
             ],
             style={"fontSize": "12px", "color": TEXT_SECONDARY, "marginTop": "10px"},
+        ),
+        html.Div(
+            [
+                html.Div("Which sector's salary grew fastest? 2021 vs 2025", style={
+                    "fontFamily": "Inter, sans-serif", "fontSize": "14px",
+                    "fontWeight": "700", "color": TEXT, "marginBottom": "4px",
+                }),
+                dcc.Loading(dcc.Graph(id="salary-slope-chart", config={"displayModeBar": False}), type="circle", color=BLUE),
+            ],
+            className="panel",
+            style={"marginTop": "20px"},
+        ),
+        html.Div(
+            [
+                html.Div("Salary across sector and year, all at once", style={
+                    "fontFamily": "Inter, sans-serif", "fontSize": "14px",
+                    "fontWeight": "700", "color": TEXT, "marginBottom": "4px",
+                }),
+                html.Div(
+                    "Drag to rotate. Height and colour both show median salary, so "
+                    "the shape of the surface itself shows which sectors and years "
+                    "paid more, on top of the exact figures on hover.",
+                    style={"fontSize": "12px", "color": TEXT_SECONDARY, "marginBottom": "10px"},
+                ),
+                dcc.Loading(dcc.Graph(id="salary-surface-chart", config={"displayModeBar": False}), type="circle", color=BLUE),
+            ],
+            className="panel",
+            style={"marginTop": "20px"},
         ),
     ],
     className="tab-body",
@@ -288,7 +354,7 @@ regional_tab = html.Div(
                     clearable=True,
                     style={"maxWidth": "280px", "marginBottom": "16px"},
                 ),
-                dcc.Graph(id="regional-heatmap-chart", config={"displayModeBar": False}),
+                dcc.Loading(dcc.Graph(id="regional-heatmap-chart", config={"displayModeBar": False}), type="circle", color=BLUE),
                 html.Div(
                     id="regional-coverage-note",
                     style={"fontSize": "12px", "color": TEXT_SECONDARY, "marginTop": "10px"},
@@ -312,7 +378,7 @@ regional_tab = html.Div(
                     "\"Who Stays, Who Leaves?\" (2026).",
                     style={"fontSize": "12px", "color": TEXT_SECONDARY, "marginBottom": "10px"},
                 ),
-                dcc.Graph(id="mac-stay-rate-chart", config={"displayModeBar": False}),
+                dcc.Loading(dcc.Graph(id="mac-stay-rate-chart", config={"displayModeBar": False}), type="circle", color=BLUE),
             ],
             className="panel",
         ),
@@ -392,7 +458,7 @@ nationality_tab = html.Div(
                     ],
                     style={"display": "flex", "marginBottom": "16px"},
                 ),
-                dcc.Graph(id="nationality-ranking-chart", config={"displayModeBar": False}),
+                dcc.Loading(dcc.Graph(id="nationality-ranking-chart", config={"displayModeBar": False}), type="circle", color=BLUE),
             ],
             className="panel",
             style={"marginBottom": "20px"},
@@ -413,7 +479,7 @@ nationality_tab = html.Div(
                     "as a smooth trend through the missing quarters.",
                     style={"fontSize": "12px", "color": TEXT_SECONDARY, "marginBottom": "10px"},
                 ),
-                dcc.Graph(id="nationality-trend-chart", config={"displayModeBar": False}),
+                dcc.Loading(dcc.Graph(id="nationality-trend-chart", config={"displayModeBar": False}), type="circle", color=BLUE),
                 # this doesn't show anything on screen - it exists to stop a
                 # slow, older server response from overwriting a newer one
                 # when the nationality dropdown is changed rapidly (confirmed

@@ -234,6 +234,7 @@
     <div class="hero-eyebrow">Navigating the UK Job Market · 2021&ndash;2026</div>
     <h1>What actually happened to sponsored work in the UK &mdash; and why</h1>
     <p>Five years of Brexit, COVID, and shifting immigration policy, told through the real data. Scroll to see how the market changed for international students.</p>
+    <svg id="hero-timeline" viewBox="0 0 900 90" style="width: 100%; max-width: 900px; margin-top: 24px;"></svg>
     <div class="scroll-cue">Scroll to begin</div>
   </section>
 
@@ -304,6 +305,58 @@
 
 <script src="/story/vendor/d3.min.js"></script>
 <script src="/story/vendor/scrollama.min.js"></script>
+
+<script>
+  // Animated landing-page timeline of the key policy dates this whole
+  // story is built around - same dates already annotated on the
+  // Sectors tab chart, just given their own entrance moment here since
+  // they're the reason the rest of the story exists
+  (function () {
+    var events = [
+      { date: "Jan 2021", label: "Brexit ends free movement" },
+      { date: "May 2022", label: "UK vacancies peak" },
+      { date: "Apr 2024", label: "Salary threshold rises" },
+      { date: "Apr 2025", label: "Threshold rises again" },
+    ];
+    var svg = d3.select("#hero-timeline");
+    var width = 900, y = 45;
+    var x = d3.scalePoint().domain(events.map(function (d) { return d.date; })).range([40, width - 40]);
+
+    svg.append("line")
+      .attr("x1", 40).attr("x2", 40).attr("y1", y).attr("y2", y)
+      .attr("stroke", "#2563EB").attr("stroke-width", 2)
+      .transition().duration(1200).delay(200)
+      .attr("x2", width - 40);
+
+    var groups = svg.selectAll(".timeline-event")
+      .data(events)
+      .enter()
+      .append("g")
+      .attr("class", "timeline-event")
+      .attr("transform", function (d) { return "translate(" + x(d.date) + "," + y + ")"; })
+      .style("opacity", 0);
+
+    groups.append("circle")
+      .attr("r", 5).attr("fill", "#2563EB");
+
+    groups.append("text")
+      .attr("y", -14)
+      .attr("text-anchor", function (d, i) { return i === 0 ? "start" : (i === events.length - 1 ? "end" : "middle"); })
+      .attr("font-size", "11px").attr("font-weight", "700").attr("fill", "#111827")
+      .text(function (d) { return d.date; });
+
+    groups.append("text")
+      .attr("y", 22)
+      .attr("text-anchor", function (d, i) { return i === 0 ? "start" : (i === events.length - 1 ? "end" : "middle"); })
+      .attr("font-size", "10px").attr("fill", "#6B7280")
+      .text(function (d) { return d.label; });
+
+    groups.transition()
+      .duration(500)
+      .delay(function (d, i) { return 600 + i * 300; })
+      .style("opacity", 1);
+  })();
+</script>
 <script>
 (function () {
   "use strict";

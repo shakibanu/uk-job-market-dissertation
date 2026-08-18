@@ -12,7 +12,8 @@ default styling.
 import dash_bootstrap_components as dbc
 import pandas as pd
 import plotly.graph_objects as go
-from dash import Input, Output, State, html
+from plotly.subplots import make_subplots
+from dash import Input, Output, State, html, dcc, ctx, ALL
 
 from app_instance import app
 from data_loader import (
@@ -309,13 +310,26 @@ def update_sponsorship_comparison(_):
     Output("company-table-container", "children"),
     Input("city-search", "value"),
     Input("company-sector-filter", "value"),
+    Input("favourites-only-toggle", "value"),
+    Input("bookmarked-companies", "data"),
 )
-def update_company_table(search_value, sector_value):
+def update_company_table(search_value, sector_value, favourites_only, bookmarked):
     results = sponsors_df
 
     # Filter by sector first, if one is selected
     if sector_value:
         results = results[results["Sector"] == sector_value]
+
+    # bookmarked-companies stores {"bookmarked": [...], "last_clicks": {...}}
+    # so the actual list needs pulling out - using the raw dict directly
+    # here made every isin() check compare against the dict's keys
+    # ("bookmarked", "last_clicks") instead of real company names, so no
+    # company could ever match
+    bookmarked = (bookmarked or {}).get("bookmarked", [])
+    # Favourites-only filter (S4-13) - showing just the bookmarked
+    # companies, applied before the usual search/sort logic below
+    if favourites_only:
+        results = results[results["Organisation"].isin(bookmarked)]
 
     # Show the first few companies when no city has been searched yet -
     # sorting by sector first, so the default view actually shows some
@@ -339,9 +353,63 @@ def update_company_table(search_value, sector_value):
     results["Sector"] = results["Sector"].fillna("—")
 
     if results.empty:
-        return html.P("No sponsors found matching that search.", style={"color": TEXT_SECONDARY})
+        message = "No bookmarked companies yet - use the star to save one." if favourites_only else "No sponsors found matching that search."
+        return html.P(message, style={"color": TEXT_SECONDARY})
 
-    return dbc.Table.from_dataframe(results, striped=True, bordered=False, hover=True, size="sm")
+    # Building the table manually instead of dbc.Table.from_dataframe, so
+    # each row can have its own bookmark star button (from_dataframe
+    # doesn't support per-row interactive elements)
+    header = html.Thead(html.Tr(
+        [html.Th("")] + [html.Th(col) for col in results.columns]
+    ))
+    body_rows = []
+    for _, row in results.iterrows():
+        company_name = row["Organisation"]
+        is_bookmarked = company_name in bookmarked
+        star = html.Button(
+            "★" if is_bookmarked else "☆",
+            id={"type": "bookmark-star", "index": company_name},
+            className="bookmark-star bookmark-star--active" if is_bookmarked else "bookmark-star",
+        )
+        body_rows.append(html.Tr([html.Td(star)] + [html.Td(row[col]) for col in results.columns]))
+
+    return dbc.Table([header, html.Tbody(body_rows)], striped=True, bordered=False, hover=True, size="sm")
+
+
+@app.callback(
+    Output("bookmarked-companies", "data"),
+    Input({"type": "bookmark-star", "index": ALL}, "n_clicks"),
+    State("bookmarked-companies", "data"),
+    prevent_initial_call=True,
+)
+def toggle_bookmark(n_clicks_list, store_data):
+    # When the bookmark list changes, the company table re-renders and
+    # recreates every star button - including the one just clicked. Dash
+    # carries the same n_clicks value over to the new button and reports
+    # it as a fresh trigger, which made a single real click immediately
+    # bookmark then un-bookmark the same company. Fixed by tracking each
+    # company's last-seen n_clicks value and only toggling on a genuine
+    # increase, not just any non-null value showing up again.
+    store_data = store_data or {"bookmarked": [], "last_clicks": {}}
+    bookmarked = store_data.get("bookmarked", [])
+    last_clicks = store_data.get("last_clicks", {})
+
+    triggered = ctx.triggered_id
+    if triggered is None:
+        return store_data
+    company_name = triggered["index"]
+
+    new_n_clicks = ctx.triggered[0]["value"] or 0
+    previously_seen = last_clicks.get(company_name, 0)
+
+    if new_n_clicks > previously_seen:
+        if company_name in bookmarked:
+            bookmarked = [c for c in bookmarked if c != company_name]
+        else:
+            bookmarked = bookmarked + [company_name]
+
+    last_clicks[company_name] = new_n_clicks
+    return {"bookmarked": bookmarked, "last_clicks": last_clicks}
 
 
 @app.callback(Output("salary-chart", "figure"), Input("salary-year-dropdown", "value"))
@@ -737,3 +805,134 @@ app.clientside_callback(
     State("nationality-sector-dropdown", "value"),
     State("nationality-filter-dropdown", "value"),
 )
+
+
+@app.callback(Output("salary-slope-chart", "figure"), Input("main-tabs", "value"))
+def update_salary_slope_chart(_):
+    # a simple two-point comparison per sector - 2021 vs 2025 median
+    # salary, using the corrected VACS02-era master dataset. This answers
+    # "which sector's salary grew fastest" at a glance, which a bar chart
+    # showing 5 separate years doesn't do as clearly
+    fig = go.Figure()
+    for i, sector in enumerate(SECTORS):
+        sector_data = master_df[master_df["Sector"] == sector]
+        salary_2021 = sector_data[sector_data["Year"] == 2021]["Median_Salary"].iloc[0]
+        salary_2025 = sector_data[sector_data["Year"] == 2025]["Median_Salary"].iloc[0]
+        colour = [BLUE, TEAL, AMBER, DANGER, "#8B5CF6"][i % 5]
+        fig.add_trace(go.Scatter(
+            x=["2021", "2025"], y=[salary_2021, salary_2025],
+            mode="lines+markers+text", name=sector,
+            line=dict(color=colour, width=2), marker=dict(size=8),
+            # only labelling the 2025 endpoint - labelling both ends
+            # caused the 2021-side text to overlap badly, since several
+            # sectors start at a similar salary
+            text=["", f"{sector}: £{salary_2025:,}"],
+            textposition="middle right",
+            hovertemplate="%{x}: £%{y:,}<extra></extra>",
+        ))
+    fig.update_layout(title="Median salary by sector, 2021 vs 2025", showlegend=True)
+    fig.update_xaxes(range=[-0.3, 1.5])
+    return style_fig(fig)
+
+
+@app.callback(Output("small-multiples-chart", "figure"), Input("main-tabs", "value"))
+def update_small_multiples(_):
+    # 5 mini panels, one per sector, all sharing the same y-axis scale so
+    # they're genuinely comparable at a glance - using the corrected
+    # VACS02 vacancy data, same source the Sectors tab already uses
+    fig = make_subplots(rows=1, cols=5, subplot_titles=SECTORS, shared_yaxes=True)
+    for i, sector in enumerate(SECTORS):
+        sector_data = master_df[master_df["Sector"] == sector].sort_values("Quarter")
+        fig.add_trace(
+            go.Scatter(
+                x=sector_data["Quarter"], y=sector_data["Vacancy_Count"],
+                mode="lines", line=dict(color=BLUE, width=2),
+                fill="tozeroy", fillcolor="rgba(37,99,235,0.08)",
+                showlegend=False, hovertemplate="%{x}: %{y:,}<extra></extra>",
+            ),
+            row=1, col=i + 1,
+        )
+        fig.update_xaxes(showticklabels=False, row=1, col=i + 1)
+    fig.update_layout(height=280)
+    return style_fig(fig)
+
+
+@app.callback(
+    Output("company-export-download", "data"),
+    Input("company-export-button", "n_clicks"),
+    State("city-search", "value"),
+    State("company-sector-filter", "value"),
+    State("favourites-only-toggle", "value"),
+    State("bookmarked-companies", "data"),
+    prevent_initial_call=True,
+)
+def export_companies_csv(n_clicks, search_value, sector_value, favourites_only, bookmarked):
+    # reusing the exact same filtering logic as the table itself, so the
+    # exported CSV always matches what's actually on screen, not some
+    # separate unfiltered dump
+    results = sponsors_df
+    if sector_value:
+        results = results[results["Sector"] == sector_value]
+
+    # this was missing the favourites-only/bookmark filter the table
+    # itself supports - without it, exporting while filtered to
+    # bookmarked companies would silently export the wrong, unfiltered set
+    bookmarked_list = (bookmarked or {}).get("bookmarked", [])
+    if favourites_only:
+        results = results[results["Organisation"].isin(bookmarked_list)]
+
+    if not search_value:
+        results = results.sort_values("Sector", na_position="last").head(10)
+    else:
+        results = results[results["City"].str.contains(search_value, case=False, na=False)]
+        results = results.sort_values("Active_Job_Count", ascending=False, na_position="last").head(50)
+
+    return dcc.send_data_frame(results.to_csv, "sponsor_companies.csv", index=False)
+
+
+# Client-side export for the Sectors chart - using Plotly's own built-in
+# image download rather than rebuilding the chart server-side. This
+# guarantees the exported image always matches exactly what's on screen
+# (including the SARIMA forecast overlay and annotations), without
+# duplicating or touching the existing update_sector_chart logic at all.
+app.clientside_callback(
+    """
+    function(n_clicks) {
+        if (n_clicks) {
+            const graphDiv = document.getElementById('sector-vacancy-chart').querySelector('.js-plotly-plot');
+            Plotly.downloadImage(graphDiv, {format: 'png', filename: 'sector_vacancy_chart'});
+        }
+        return window.dash_clientside.no_update;
+    }
+    """,
+    Output("sector-chart-export-download", "data"),
+    Input("sector-chart-export-button", "n_clicks"),
+    prevent_initial_call=True,
+)
+
+
+
+
+
+@app.callback(Output("salary-surface-chart", "figure"), Input("main-tabs", "value"))
+def update_salary_surface(_):
+    # Year x Sector x Median_Salary - a real 5x5 grid from the master
+    # dataset, checked during the audit to confirm every cell is a real
+    # observation, nothing interpolated to fill a gap
+    years = sorted(master_df["Year"].unique())
+    pivot = master_df.pivot_table(index="Sector", columns="Year", values="Median_Salary", aggfunc="first")
+    pivot = pivot.reindex(SECTORS)
+
+    fig = go.Figure(data=[go.Surface(
+        z=pivot.values, x=years, y=SECTORS,
+        colorscale=[[0, "#DBEAFE"], [1, BLUE]],
+        hovertemplate="Year %{x}<br>%{y}<br>£%{z:,.0f}<extra></extra>",
+    )])
+    fig.update_layout(
+        scene=dict(
+            xaxis_title="Year", yaxis_title="", zaxis_title="Median salary (£)",
+        ),
+        margin=dict(l=0, r=0, t=10, b=0),
+        height=500,
+    )
+    return style_fig(fig)
