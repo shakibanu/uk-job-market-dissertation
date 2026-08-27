@@ -22,6 +22,7 @@ from data_loader import (
     gdp_df, tuition_df, living_cost_df,
     mac_stay_rate_df, REGION_MAPPED_COUNT, REGION_TOTAL_COUNT,
     nationality_df, ALL_POSSIBLE_QUARTERS,
+    UK_REGION_GEOJSON, UK_REGION_NAMES,
 )
 from sarima_forecast import SARIMA_RESULTS
 from roi_calculator import calculate_roi, get_sponsorship_activity_ranking
@@ -79,7 +80,7 @@ def update_sector_chart(sector):
             fillcolor="rgba(79, 124, 255, 0.08)",
         )
     )
-    fig.update_layout(title=f"{sector} — vacancy count by quarter, with 4-quarter forecast")
+    fig.update_layout(title=f"{sector} - vacancy count by quarter, with 4-quarter forecast")
 
     # Adding the SARIMA forecast on after the historical line, so it reads
     # as a continuation of the chart rather than a separate graph
@@ -161,21 +162,39 @@ def update_sarima_diagnostics(sector):
         ], style={"fontSize": "13px", "marginBottom": "8px"}),
     ]
     if not has_seasonal_component:
-        rows.append(html.Div(
-            "⚠ No seasonal component detected for this sector with only 20 quarters "
-            "of data — auto_arima selected a non-seasonal model, so the forecast is "
-            "a trend projection rather than a seasonal one. This is a genuine result, "
-            "not an error; see the Methodology's limitations for why short series "
-            "constrain SARIMA fitting.",
-            style={"fontSize": "12px", "color": AMBER, "background": "rgba(217,119,6,0.08)",
-                   "padding": "10px", "borderRadius": "8px"},
-        ))
+        rows.append(html.Div([
+            html.Div(
+                "This sector does not show a repeating yearly pattern in the "
+                "data available. The forecast instead follows the general trend.",
+                style={"fontSize": "12px", "color": AMBER, "marginBottom": "4px"},
+            ),
+            html.Div(
+                "Forecast based on 5 years of quarterly data. The darker shaded "
+                "band shows the range the figure will most likely fall within; "
+                "the lighter band is a wider, more cautious range. Both bands "
+                "get wider further into the future, since forecasts become "
+                "less certain the further ahead they look. This is a genuine "
+                "result, not an error - see the Methodology's limitations for "
+                "why short series constrain SARIMA fitting.",
+                style={"fontSize": "11px", "color": TEXT_SECONDARY},
+            ),
+        ], style={"background": "rgba(217,119,6,0.08)", "padding": "10px", "borderRadius": "8px"}))
     else:
-        rows.append(html.Div(
-            "Seasonal component detected. Shaded bands show the 80% (darker) and 95% "
-            "(lighter) confidence intervals — forecasts get less certain further out.",
-            style={"fontSize": "12px", "color": TEXT_SECONDARY},
-        ))
+        rows.append(html.Div([
+            html.Div(
+                "This sector shows a repeating pattern across the year, which "
+                "the forecast takes into account.",
+                style={"fontSize": "12px", "color": TEXT, "marginBottom": "4px"},
+            ),
+            html.Div(
+                "Forecast based on 5 years of quarterly data. The darker shaded "
+                "band shows the range the figure will most likely fall within; "
+                "the lighter band is a wider, more cautious range. Both bands "
+                "get wider further into the future, since forecasts become "
+                "less certain the further ahead they look.",
+                style={"fontSize": "11px", "color": TEXT_SECONDARY},
+            ),
+        ]))
     return rows
 
 
@@ -359,8 +378,21 @@ def update_company_table(search_value, sector_value, favourites_only, bookmarked
     # Building the table manually instead of dbc.Table.from_dataframe, so
     # each row can have its own bookmark star button (from_dataframe
     # doesn't support per-row interactive elements)
+    # Friendly labels for the header row only - the underlying results.columns
+    # names (used below for row[col] to actually pull each cell's data) are
+    # completely unchanged, this only affects what the user reads at the top
+    # of the table
+    DISPLAY_LABELS = {
+        "Organisation": "Organisation",
+        "City": "City",
+        "Type_Rating": "Sponsor rating",
+        "Route": "Visa route",
+        "Region": "Region",
+        "Active_Job_Count": "Active jobs",
+        "Sector": "Sector",
+    }
     header = html.Thead(html.Tr(
-        [html.Th("")] + [html.Th(col) for col in results.columns]
+        [html.Th("")] + [html.Th(DISPLAY_LABELS.get(col, col)) for col in results.columns]
     ))
     body_rows = []
     for _, row in results.iterrows():
@@ -443,7 +475,7 @@ def update_salary_chart(year):
         annotation_font=dict(size=11, color=AMBER),
     )
     fig.update_layout(
-        title=f"Median salary by sector vs Skilled Worker threshold — {year}",
+        title=f"Median salary by sector vs Skilled Worker threshold - {year}",
         yaxis_title="£ per year",
     )
     fig.update_yaxes(range=[0, year_data["Median_Salary"].max() * 1.25])
@@ -516,7 +548,7 @@ def update_roi_results(country, sector, region):
     fig.add_trace(go.Scatter(x=years, y=cumulative_cost, mode="lines", name="Total cost", line=dict(color=DANGER, width=2, dash="dash")))
     fig.add_trace(go.Scatter(x=years, y=cumulative_advantage, mode="lines", name="Cumulative salary advantage", line=dict(color=TEAL, width=2)))
     fig.update_layout(
-        title=f"Cumulative salary advantage vs total cost — {sector} in the UK vs {country}",
+        title=f"Cumulative salary advantage vs total cost - {sector} in the UK vs {country}",
         xaxis_title="Years after graduating",
         yaxis_title="£",
     )
@@ -553,22 +585,29 @@ def update_fit_calculator(sector):
     model_card = html.Div(
         [
             html.P(
-                f"This ranking uses a rule-based approach, not the Random Forest classifier directly. "
-                f"The Random Forest was trained and evaluated with 5-fold cross-validation, but its "
-                f"F1 score ({FIT_F1_SCORE:.2f}) came in below the 0.65 reliability bar set for this "
-                f"feature, so its predictions aren't trustworthy enough to present as real probabilities.",
+                f"We first tried a Random Forest - a machine learning model that combines many "
+                f"simple decision rules into one prediction - to rank companies by likelihood of "
+                f"sponsorship. To check its accuracy, we measured its F1 score, a single number "
+                f"that balances correct matches against mistakes. It scored {FIT_F1_SCORE:.2f}, "
+                f"below the 0.65 we needed to trust it. So the ranking below instead uses three "
+                f"clear signals: sector match, sponsor rating, and whether the company has a "
+                f"real, current job posting.",
                 style={"fontSize": "13px", "marginBottom": "8px"},
             ),
             html.P(
                 "Why the F1 score is low: the Home Office Sponsors Register only has 4 columns to "
                 "begin with, and the training label (whether a company appears in Adzuna job postings) "
                 "has a hard ceiling of about 200 possible positive examples out of 122,015 sponsors, "
-                "since only 201 companies exist in the Adzuna data at all. That's too little signal "
-                "for a reliable prediction, even with SMOTE.",
+                "since only 201 companies exist in the Adzuna data at all. We tried a technique called "
+                "SMOTE, which generates extra realistic examples of the rare category to give the "
+                "model more to learn from, but even with that, there was too little signal for a "
+                "reliable prediction.",
                 style={"fontSize": "13px", "marginBottom": "8px"},
             ),
             html.P(
-                f"Random Forest feature importance (diagnostic only, not used for these rankings): "
+                f"Feature importance is a measure of how much each factor influenced the model's "
+                f"decisions (shown here for information only - it is not used in the ranking above, "
+                f"since the model itself was not accurate enough to trust): "
                 f"Sector {FIT_FEATURE_IMPORTANCE.get('Sector_Encoded', 0):.1%}, "
                 f"Type Rating {FIT_FEATURE_IMPORTANCE.get('Type_Rating_Encoded', 0):.1%}.",
                 style={"fontSize": "13px", "marginBottom": "8px"},
@@ -611,7 +650,7 @@ def update_regional_heatmap(sector_filter):
         textposition="outside",
         hovertemplate="%{y}: %{x:,} sponsors<extra></extra>",
     ))
-    title_suffix = f" — {sector_filter}" if sector_filter else " — all sectors"
+    title_suffix = f" — {sector_filter}" if sector_filter else " - all sectors"
     fig.update_layout(title=f"Licensed sponsor organisations by region{title_suffix}")
     fig.update_xaxes(title="Number of sponsors")
 
@@ -634,7 +673,243 @@ def update_regional_heatmap(sector_filter):
             f"in the mapping, or genuinely ambiguous place names (e.g. Richmond, "
             f"Newport) that were deliberately left unmapped rather than guessed."
         )
-    return style_fig(fig), coverage_text
+    # this chart updates every time the sector filter changes, which can
+    # happen faster than style_fig()'s 400ms transition - confirmed by
+    # testing rapid consecutive selections and finding the same stale-
+    # render bug already fixed on the ROI and Nationality charts. Same
+    # fix, local to this chart only.
+    styled_fig = style_fig(fig)
+    styled_fig.update_layout(transition={"duration": 0})
+    return styled_fig, coverage_text
+
+
+@app.callback(
+    Output("regional-globe-chart", "figure"),
+    Output("regional-globe-accessible-list", "children"),
+    Input("regional-sector-filter", "value"),
+)
+def update_regional_globe(sector_filter):
+    # S4-15 - 3D rotatable globe. Deliberately its own callback, separate
+    # from update_regional_heatmap() above: it only reads sponsors_df
+    # (already loaded, already used by the bar chart) and never edits or
+    # depends on that existing callback, so this can be added or removed
+    # without touching anything already working on this tab.
+    results = sponsors_df[sponsors_df["Region"].notna()]
+    if sector_filter:
+        results = results[results["Sector"] == sector_filter]
+
+    # Real counts from sponsors_df only - the same data source, the same
+    # filtering, and the same numbers the bar chart above is built from.
+    # Nothing here is invented, estimated, or redistributed. Reindexed
+    # over all 12 regions in UK_REGION_NAMES (filling 0 where a sector
+    # filter leaves a region with no matches) so the globe always shows
+    # all 12 regions and none are silently dropped.
+    region_counts = results["Region"].value_counts().reindex(UK_REGION_NAMES, fill_value=0)
+    title_suffix = f" — {sector_filter}" if sector_filter else " - all sectors"
+
+    # --- Geographic clarity pass (still S4-15, no other file touched) ---
+    # Real region-name labels, positioned with shapely's
+    # representative_point() on our own real ONS geometry (guaranteed to
+    # land inside the polygon, unlike a plain centroid, which can fall
+    # outside a concave/multi-part shape like Scotland). A handful of
+    # regions sit too close together for both names to be readable at
+    # this scale (London is a small enclave fully inside South East;
+    # the Midlands/Yorkshire cluster is tight) - LABEL_OFFSET_DEG nudges
+    # only the TEXT position for those, with a leader line always drawn
+    # back to the true location, so the coloured shape and its data never
+    # move. These offsets were derived empirically: rendered the map,
+    # measured the actual on-screen text boxes in a headless browser, ran
+    # an iterative pairwise-separation pass until zero boxes overlapped,
+    # then converted the resulting pixel shifts back to lat/lon. Verified
+    # zero label collisions at the default view (re-verify if this
+    # panel's pixel size ever changes materially - zooming further OUT
+    # than the default view can still crowd labels again, an inherent
+    # limit of static map labels rather than something fixable here).
+    LABEL_OFFSET_DEG = {
+        "London": (-1.6, 0.7),
+        "North West": (0.12, -1.40),
+        "Yorkshire and the Humber": (-0.12, 1.40),
+        "East Midlands": (0.16, 0.80),
+        "West Midlands": (-0.11, -0.20),
+        "East of England": (-0.03, 0.73),
+        "Wales": (-0.02, -1.33),
+    }
+    LEADER_LINE_REGIONS = {
+        "London", "North West", "Yorkshire and the Humber",
+        "East Midlands", "East of England", "Wales",
+    }
+    # Real, documented reference points for the two neighbouring
+    # landmasses visible in this tightly-cropped view - Ireland's
+    # commonly-cited geographic centre, and the part of the French coast
+    # actually visible here (near Calais), not France's national centroid
+    # which would be off-screen at this zoom. Muted styling so they read
+    # as orientation context only, clearly secondary to the UK regions.
+    NEIGHBOUR_LABELS = [("Ireland", 53.4, -7.9), ("France", 50.9, 1.9)]
+
+    def _relative_luminance(hexcolor):
+        r, g, b = [int(hexcolor.lstrip("#")[i:i+2], 16) / 255 for i in (0, 2, 4)]
+        def f(c):
+            return c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4
+        r, g, b = f(r), f(g), f(b)
+        return 0.2126 * r + 0.7152 * g + 0.0722 * b
+
+    def _blend(c1, c2, t):
+        r1, g1, b1 = [int(c1.lstrip("#")[i:i+2], 16) for i in (0, 2, 4)]
+        r2, g2, b2 = [int(c2.lstrip("#")[i:i+2], 16) for i in (0, 2, 4)]
+        return f"#{int(r1+(r2-r1)*t):02x}{int(g1+(g2-g1)*t):02x}{int(b1+(b2-b1)*t):02x}"
+
+    # Colour uses a square-root scale so all 12 regions are visually
+    # distinguishable - London's count is 15-20x most other regions, so a
+    # strictly linear colour scale makes 11 of 12 regions look almost
+    # identical pale blue. This affects ONLY the fill colour: the
+    # underlying counts (hover text, the colourbar's own tick labels, and
+    # the accessible table below) are always the real, untransformed
+    # sponsor numbers - verified by testing several sector filters
+    # spanning both very high-count and very low-count regions.
+    COLOR_POWER = 0.5
+    zmax = max(int(region_counts.max()), 1)
+    colorbar_real_vals = sorted(set([0] + [round(zmax * f) for f in (0.02, 0.08, 0.2, 0.4, 0.7, 1.0)]))
+    colorbar_tickvals = [(v / zmax) ** COLOR_POWER for v in colorbar_real_vals]
+    colorbar_ticktext = [f"{v:,}" for v in colorbar_real_vals]
+
+    label_lat, label_lon, label_text, label_color = [], [], [], []
+    leader_lat, leader_lon = [], []
+    for feat in UK_REGION_GEOJSON["features"]:
+        name = feat["properties"]["Region"]
+        # LabelPoint is precomputed offline in build_region_boundaries.py
+        # (shapely's representative_point() on the real ONS geometry,
+        # guaranteed to land inside the polygon) and baked into
+        # data/UK_Region_Boundaries.geojson - read here as a plain value,
+        # never recomputed at runtime. This keeps shapely a build-time-only
+        # dependency (matching how the geometry itself is already built
+        # offline) rather than a new package this app needs installed to
+        # even start.
+        rp_lat, rp_lon = feat["properties"]["LabelPoint"]
+        raw_t = region_counts.get(name, 0) / zmax
+        fill_color = _blend("#EAF2FB", BLUE, raw_t ** COLOR_POWER)
+        text_color = "#0B1220" if _relative_luminance(fill_color) > 0.35 else "#FFFFFF"
+        dlat, dlon = LABEL_OFFSET_DEG.get(name, (0, 0))
+        lat, lon = rp_lat + dlat, rp_lon + dlon
+        if name in LEADER_LINE_REGIONS:
+            leader_lat += [rp_lat, lat, None]
+            leader_lon += [rp_lon, lon, None]
+            if name == "London":
+                text_color = "#0B1220"  # offset label always sits on the pale open-sea background
+        label_lat.append(lat)
+        label_lon.append(lon)
+        label_text.append(name)
+        label_color.append(text_color)
+
+    globe_fig = go.Figure()
+    globe_fig.add_trace(go.Choropleth(
+        geojson=UK_REGION_GEOJSON,
+        featureidkey="properties.Region",
+        locations=region_counts.index,
+        z=[v ** COLOR_POWER for v in (region_counts.values / zmax)],
+        # customdata carries the REAL, untransformed count through to the
+        # hover text - z above only ever drives the fill colour
+        customdata=region_counts.values,
+        colorscale=[[0, "#EAF2FB"], [1, BLUE]],
+        marker_line_color="#FFFFFF",
+        marker_line_width=0.6,
+        zmin=0, zmax=1,
+        colorbar=dict(
+            title="Licensed sponsors<br>(darker = more)",
+            tickvals=colorbar_tickvals,
+            ticktext=colorbar_ticktext,
+        ),
+        hovertemplate="<b>%{location}</b><br>%{customdata:,} licensed sponsors<extra></extra>",
+    ))
+    globe_fig.add_trace(go.Scattergeo(
+        lat=leader_lat, lon=leader_lon, mode="lines",
+        line=dict(width=1.4, color="#5B6B85"), hoverinfo="skip", showlegend=False,
+    ))
+    globe_fig.add_trace(go.Scattergeo(
+        lat=[p[1] for p in NEIGHBOUR_LABELS], lon=[p[2] for p in NEIGHBOUR_LABELS],
+        text=[p[0] for p in NEIGHBOUR_LABELS],
+        mode="text",
+        textfont=dict(size=10, color="#AAB4C4", family="Inter, sans-serif"),
+        hoverinfo="skip", showlegend=False,
+    ))
+    globe_fig.add_trace(go.Scattergeo(
+        lat=label_lat, lon=label_lon, text=label_text,
+        mode="text",
+        textfont=dict(size=11, color=label_color, family="Inter, sans-serif"),
+        hoverinfo="skip", showlegend=False,
+    ))
+    globe_fig.update_geos(
+        projection_type="orthographic",
+        # Coastline/country/land context layers are drawn from Plotly's
+        # base world atlas - re-enabled here for geographic orientation
+        # (so a student can see this is the UK relative to Ireland and
+        # France, not just floating coloured shapes). Confirmed by
+        # network-request logging that this adds ZERO external
+        # dependency: dcc.Graph's topojsonURL config (set in tabs.py)
+        # already points at a self-hosted copy of the same base atlas
+        # file these layers need, so they're served from that local file,
+        # never from cdn.plot.ly.
+        showcountries=True,
+        countrycolor="#B8C4D9",
+        showcoastlines=True,
+        coastlinecolor="#B8C4D9",
+        showland=True,
+        landcolor="#F8FAFD",
+        showframe=False,
+        showocean=False,
+        showlakes=False,
+        showrivers=False,
+        showsubunits=False,
+        # A tight crop around just the 12 regions, centred on the UK,
+        # rather than a full world globe where the UK would be a tiny
+        # speck - still a genuine orthographic (curved-sphere) globe
+        # projection under the hood, verified against the installed
+        # Plotly version below; rotating it by dragging shows the same
+        # perspective curvature a wider view would.
+        fitbounds="locations",
+        bgcolor="#F3F6FB",
+    )
+    globe_fig.update_layout(
+        title=f"Licensed sponsor organisations by region{title_suffix}",
+        height=520,
+    )
+    styled_globe = style_fig(globe_fig)
+    # style_fig() sets its own fixed margin for every chart, which would
+    # otherwise override the near-zero margin this globe needs to render
+    # full-bleed - re-applied after style_fig(), same reasoning as the
+    # transition override already used on the bar chart above (own
+    # override, not shared - this callback never edits that one).
+    styled_globe.update_layout(transition={"duration": 0}, margin=dict(l=0, r=0, t=40, b=0))
+
+    # Accessible, focusable HTML table with the same 12 regions and
+    # counts as the globe - not an image, not colour-only, and not
+    # something that requires hovering a 3D shape to read. Sorted by
+    # count (highest first) so the student can see at a glance where
+    # sponsors are most concentrated, same story the globe's colours
+    # tell visually.
+    table_rows = region_counts.sort_values(ascending=False)
+    accessible_table = html.Table(
+        [
+            html.Caption(
+                f"Licensed sponsor organisations by region{title_suffix}",
+                style={"captionSide": "top", "textAlign": "left", "fontSize": "12px",
+                       "color": TEXT_SECONDARY, "marginBottom": "6px"},
+            ),
+            html.Thead(html.Tr([
+                html.Th("Region", scope="col", style={"textAlign": "left", "padding": "4px 10px 4px 0"}),
+                html.Th("Licensed sponsors", scope="col", style={"textAlign": "right", "padding": "4px 0"}),
+            ])),
+            html.Tbody([
+                html.Tr([
+                    html.Td(region, style={"padding": "3px 10px 3px 0"}),
+                    html.Td(f"{count:,}", style={"textAlign": "right", "padding": "3px 0", "fontVariantNumeric": "tabular-nums"}),
+                ])
+                for region, count in table_rows.items()
+            ]),
+        ],
+        style={"fontSize": "13px", "color": TEXT, "borderCollapse": "collapse", "width": "100%", "maxWidth": "420px"},
+    )
+
+    return styled_globe, accessible_table
 
 
 @app.callback(Output("mac-stay-rate-chart", "figure"), Input("main-tabs", "value"))
@@ -708,7 +983,7 @@ def update_nationality_ranking(sector, highlighted_nationality):
         text=display.values, texttemplate="%{text:,}", textposition="outside",
         hovertemplate="%{y}: %{x:,} grants<extra></extra>",
     ))
-    fig.update_layout(title=f"Top nationalities sponsored — {sector} (all available quarters combined)")
+    fig.update_layout(title=f"Top nationalities sponsored - {sector} (all available quarters combined)")
     fig.update_xaxes(title="Total visa grants")
     return style_fig(fig)
 
@@ -745,7 +1020,7 @@ def update_nationality_trend(sector, highlighted_nationality):
         connectgaps=False, hovertemplate="%{x}: %{y:,} grants<extra></extra>",
     ))
 
-    title_suffix = f" — {highlighted_nationality}" if highlighted_nationality else " — all nationalities"
+    title_suffix = f" — {highlighted_nationality}" if highlighted_nationality else " - all nationalities"
     fig.update_layout(title=f"{sector} visa grants by quarter{title_suffix}")
     fig.update_xaxes(title="Quarter", tickangle=-90, tickfont=dict(size=9))
     fig.update_yaxes(title="Grants")

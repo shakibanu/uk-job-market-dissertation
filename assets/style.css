@@ -96,16 +96,28 @@ body::before {
 }
 
 /* Styling for the 4 tabs across the top (Overview, Sectors, Companies, Salary) */
+.custom-tabs {
+  display: flex !important;
+  overflow-x: auto !important;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+  max-width: calc(100vw - 340px);
+  mask-image: linear-gradient(to right, black 92%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, black 92%, transparent 100%);
+}
 .custom-tabs .tab {
   font-family: 'Inter', sans-serif !important;
   font-weight: 500 !important;
-  font-size: 14px !important;
+  font-size: 13px !important;
   color: var(--text-secondary) !important;
   background: transparent !important;
   border: none !important;
   border-bottom: 2px solid transparent !important;
-  padding: 10px 4px !important;
-  margin-right: 28px !important;
+  padding: 10px 8px !important;
+  margin-right: 32px !important;
+  white-space: nowrap !important;
+  flex-shrink: 0;
+  min-width: fit-content;
   transition: color 200ms ease, border-color 200ms ease;
 }
 .custom-tabs .tab:hover {
