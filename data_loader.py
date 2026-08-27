@@ -38,6 +38,17 @@ sponsors_df = sponsors_df.merge(region_df_dedup, on="Organisation", how="left")
 REGION_MAPPED_COUNT = sponsors_df["Region"].notna().sum()
 REGION_TOTAL_COUNT = len(sponsors_df)
 
+# UK region boundary geometry for the 3D globe on the Regional tab
+# (S4-15). Built from official ONS Open Geography Portal boundaries
+# (Open Government Licence v3) - see build_region_boundaries.py for the
+# exact source datasets, the "Yorkshire and The Humber" -> "Yorkshire
+# and the Humber" naming fix, and a note on the two source files using
+# different generalisation levels. Loaded once here, like every other
+# dataset, and reused by the globe callback.
+with open("data/UK_Region_Boundaries.geojson") as f:
+    UK_REGION_GEOJSON = json.load(f)
+UK_REGION_NAMES = sorted(feat["properties"]["Region"] for feat in UK_REGION_GEOJSON["features"])
+
 # The Migration Advisory Committee's Skilled Worker 5-year stay rate by
 # region - a retention measure, not a count of sponsors or visa grants.
 # Kept as its own separate dataframe deliberately, since it must never
