@@ -114,12 +114,17 @@ def rule_based_fallback(sector, type_rating):
     """A simple, honest fallback when the Random Forest isn't reliable
     enough to use - just flags sectors and rating types that showed any
     real hiring activity in the training data at all, rather than
-    pretending to give a precise prediction."""
+    pretending to give a precise prediction. Deliberately avoids words
+    like "likelihood" or "probability" in the labels themselves, since
+    this is a rule-based tier, not a calibrated statistical estimate -
+    flagged directly by the supervisor as a risk of giving a false
+    impression given the Random Forest itself wasn't reliable enough
+    to trust."""
     known_active_sectors = {"Technology", "Healthcare", "Finance", "Engineering", "Education"}
     if sector in known_active_sectors and "Premium" in str(type_rating):
-        return "Higher relative likelihood"
+        return "Strong match (Premium sponsor, active sector)"
     elif sector in known_active_sectors:
-        return "Some relative likelihood"
+        return "Sector match"
     else:
         return "Limited data available"
 
@@ -151,14 +156,14 @@ def rank_companies_by_sector(sector, sponsors_with_sector_df, top_n=10):
     if sector_df.empty:
         return pd.DataFrame()
 
-    sector_df["Likelihood"] = sector_df.apply(
+    sector_df["Match Tier"] = sector_df.apply(
         lambda row: rule_based_fallback(row["Sector"], row["Type_Rating"]), axis=1
     )
 
-    likelihood_order = {"Higher relative likelihood": 0, "Some relative likelihood": 1, "Limited data available": 2}
+    likelihood_order = {"Strong match (Premium sponsor, active sector)": 0, "Sector match": 1, "Limited data available": 2}
     rating_order = {"Worker (A (Premium))": 0, "Worker (A (SME+))": 1, "Worker (A rating)": 2, "Worker (B rating)": 3}
 
-    sector_df["_likelihood_sort"] = sector_df["Likelihood"].map(likelihood_order)
+    sector_df["_likelihood_sort"] = sector_df["Match Tier"].map(likelihood_order)
     sector_df["_rating_sort"] = sector_df["Type_Rating"].map(rating_order).fillna(4)
     sector_df["_has_posting"] = sector_df.get("is_active_hirer", False)
 
@@ -173,7 +178,7 @@ def rank_companies_by_sector(sector, sponsors_with_sector_df, top_n=10):
     sector_df["_dedup_key"] = sector_df["Organisation"].str.upper().str.strip()
     sector_df = sector_df.drop_duplicates(subset="_dedup_key")
 
-    return sector_df[["Organisation", "City", "Type_Rating", "Likelihood"]].head(top_n).reset_index(drop=True)
+    return sector_df[["Organisation", "City", "Type_Rating", "Match Tier"]].head(top_n).reset_index(drop=True)
 
 
 if __name__ == "__main__":

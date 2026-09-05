@@ -47,11 +47,14 @@ body::before {
 
 /* Header stays fixed at the top while scrolling */
 .app-header {
-  height: 72px;
+  min-height: 72px;
+  padding-top: 10px;
+  padding-bottom: 10px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0 var(--pad-outer);
+  padding-left: var(--pad-outer);
+  padding-right: var(--pad-outer);
   background: var(--card);
   border-bottom: 1px solid var(--border);
   position: sticky;

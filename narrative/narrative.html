@@ -148,6 +148,14 @@
     margin-top: 8px;
   }
 
+  /* Chapter 3's marker on the graph is green (#16A34A, matching the
+     vacancy-peak event), so its own stat label is recoloured to match -
+     scoped to this one chapter only, other chapters keep the default */
+  .step[data-step="3"] .step-stat {
+    color: #16A34A;
+    background: rgba(22,163,74,0.08);
+  }
+
   #chart-svg { max-width: 100%; }
   .vacancy-line { fill: none; stroke: var(--blue); stroke-width: 2.5; }
   .vacancy-area { fill: rgba(37,99,235,0.07); }
@@ -164,7 +172,7 @@
   .sector-label { opacity: 0; transition: opacity 0.6s ease; }
   .sector-label.visible { opacity: 1; }
 
-  /* ---- Chapter 6 / CTA ---- */
+  /* ---- Chapter 8 / CTA ---- */
   .finale {
     min-height: 100vh;
     display: flex;
@@ -257,7 +265,7 @@
         <div class="step-content">
           <div class="step-eyebrow">Chapter 2 &middot; Brexit and COVID</div>
           <h2>Two shocks, almost at once</h2>
-          <p>Brexit ended free movement for EU citizens in January 2021. Employers who had previously hired EU workers without a visa now had to sponsor them under the same route used for international students.</p>
+          <p>Brexit ended free movement for EU citizens in January 2021. Employers who had previously hired EU workers without a visa now had to sponsor them under the same route used for international workers more broadly.</p>
           <p>At nearly the same time, the UK was still working through the disruption of the COVID-19 pandemic across the whole economy.</p>
           <span class="step-stat">Jan 2021 - free movement ends</span>
         </div>
@@ -275,20 +283,41 @@
 
       <div class="step" data-step="4">
         <div class="step-content">
-          <div class="step-eyebrow">Chapter 4 &middot; The threshold rises</div>
-          <h2>The rules changed twice</h2>
-          <p>The government raised the minimum salary threshold for Skilled Worker sponsorship in April 2024, then again in April 2025. Roles that were sponsorable a few years ago may not be anymore.</p>
-          <p>By 2024, Education's median salary had dropped below the new threshold. Healthcare joined it in 2025.</p>
-          <span class="step-stat">£26,200 &rarr; £41,700 in four years</span>
+          <div class="step-eyebrow">Chapter 4 &middot; Still near the peak</div>
+          <h2>2023: high demand, before the rules changed</h2>
+          <p>Vacancies stayed elevated through 2023, easing gradually from the 2022 peak of 464,000 to 343,000 by the end of the year - still well above the 2021 starting point of 264,000.</p>
+          <p>The sharper change was still to come.</p>
+          <span class="step-stat">2023 - still 343,000, well above 2021</span>
         </div>
       </div>
 
       <div class="step" data-step="5">
         <div class="step-content">
-          <div class="step-eyebrow">Chapter 5 &middot; Not every sector felt it the same way</div>
+          <div class="step-eyebrow">Chapter 5 &middot; The first threshold rise</div>
+          <h2>April 2024: the rules changed for the first time</h2>
+          <p>The government raised the minimum salary threshold for Skilled Worker sponsorship in April 2024. Roles that were sponsorable a few months earlier no longer qualified.</p>
+          <p>Education's median salary dropped below the new threshold that same year.</p>
+          <span class="step-stat">Apr 2024 - threshold rises, Education falls below it</span>
+        </div>
+      </div>
+
+      <div class="step" data-step="6">
+        <div class="step-content">
+          <div class="step-eyebrow">Chapter 6 &middot; The second threshold rise</div>
+          <h2>April 2025: the rules changed again</h2>
+          <p>A second threshold rise followed in April 2025 - less than a year after the first.</p>
+          <p>Healthcare's median salary dropped below the threshold in 2025, joining Education.</p>
+          <span class="step-stat">£26,200 &rarr; £41,700 in four years</span>
+        </div>
+      </div>
+
+      <div class="step" data-step="7">
+        <div class="step-content">
+          <div class="step-eyebrow">Chapter 7 &middot; Not every sector felt it the same way</div>
           <h2>Diverging paths</h2>
           <p>Healthcare visa grants nearly quintupled between 2021 and 2023, driven largely by care worker roles being added to the sponsorship list - then fell even more sharply after the 2024 and 2025 threshold rises, down to under a tenth of their 2023 peak.</p>
-          <p>Technology followed a smaller version of the same rise, then a steadier decline. Your sector's shape matters as much as the headline trend.</p>
+          <p>The other four sectors show a milder version of the same shape, but not identically: Engineering and Finance both roughly doubled from their 2021 levels before retreating, while Education fell furthest of the four in percentage terms, down 42% from where it started. Finance is the exception that ended 2025 slightly above its 2021 level, the only sector to do so.</p>
+          <p>Healthcare's swing was the most extreme by far - nearly five times its starting point, then down to under a tenth of that peak. No other sector moved anywhere near as sharply in either direction.</p>
         </div>
       </div>
 
@@ -296,12 +325,12 @@
   </div>
 
   <section class="finale">
-    <div class="hero-eyebrow">Chapter 6 &middot; Your path forward</div>
+    <div class="hero-eyebrow">Chapter 8 &middot; Your path forward</div>
     <h2>This data shows what happened. Now see what it means for you.</h2>
     <p>That's the national picture. But the real job market isn't one thing - it looks different depending on your sector, your salary, and where you're from. The rest of this platform is that same story, told about you specifically.</p>
     <p>Explore your own sector, search real licensed sponsors, and get a realistic picture of your own chances - not just the national trend.</p>
     <a href="/" class="cta-button">Explore the dashboard &rarr;</a>
-    <a href="#sources" class="sources-link">View data sources</a>
+    <a href="/" class="sources-link">See the full list of data sources on the dashboard</a>
   </section>
 
 <script src="/story/vendor/d3.min.js"></script>
@@ -534,9 +563,15 @@
         drawNationalUpTo(5); // through 2022-Q2
         showEventsUpTo(["2021-Q1", "2022-Q2"]);
       } else if (stepNum === 4) {
+        drawNationalUpTo(11); // through 2023-Q4, still near the peak
+        showEventsUpTo(["2021-Q1", "2022-Q2"]);
+      } else if (stepNum === 5) {
+        drawNationalUpTo(13); // through 2024-Q2, first threshold rise
+        showEventsUpTo(["2021-Q1", "2022-Q2", "2024-Q2"]);
+      } else if (stepNum === 6) {
         drawNationalUpTo(quarters.length - 1);
         showEventsUpTo(["2021-Q1", "2022-Q2", "2024-Q2", "2025-Q2"]);
-      } else if (stepNum === 5) {
+      } else if (stepNum === 7) {
         showSectorLines();
       }
     }

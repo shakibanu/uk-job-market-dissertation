@@ -184,7 +184,17 @@ companies_tab = html.Div(
             ],
             style={"display": "flex", "marginBottom": "20px"},
         ),
+        dcc.Store(id="company-table-page", data=0),
+        html.Div(id="company-results-summary", style={"fontSize": "12px", "color": TEXT_SECONDARY, "marginBottom": "8px"}),
         html.Div(id="company-table-container", className="panel"),
+        html.Div(
+            [
+                html.Button("← Previous", id="company-prev-page", n_clicks=0, className="export-button"),
+                html.Span(id="company-page-indicator", style={"margin": "0 12px", "fontSize": "13px", "color": TEXT_SECONDARY}),
+                html.Button("Next →", id="company-next-page", n_clicks=0, className="export-button"),
+            ],
+            style={"display": "flex", "alignItems": "center", "marginTop": "10px"},
+        ),
         html.Div(
             [
                 html.Button("Export current results as CSV", id="company-export-button", className="export-button"),
@@ -250,14 +260,16 @@ salary_tab = html.Div(
         ),
         html.Div(
             [
-                html.Div("Salary across sector and year, all at once", style={
+                html.Div("Vacancies, salary, and visa grants together", style={
                     "fontFamily": "Inter, sans-serif", "fontSize": "14px",
                     "fontWeight": "700", "color": TEXT, "marginBottom": "4px",
                 }),
                 html.Div(
-                    "Drag to rotate. Height and colour both show median salary, so "
-                    "the shape of the surface itself shows which sectors and years "
-                    "paid more, on top of the exact figures on hover.",
+                    "Drag to rotate. Each point is one sector-quarter, plotting three "
+                    "real measures against each other - vacancy count, median salary, "
+                    "and visa grants - coloured by sector, so you can see whether "
+                    "higher vacancies or salary line up with more sponsorship in "
+                    "practice.",
                     style={"fontSize": "12px", "color": TEXT_SECONDARY, "marginBottom": "10px"},
                 ),
                 dcc.Loading(dcc.Graph(id="salary-surface-chart", config={"displayModeBar": False}), type="circle", color=BLUE),
@@ -329,19 +341,27 @@ roi_tab = html.Div(
             type="circle", color=BLUE,
         ),
         html.Div(
-            "This compares the total cost of studying and living in the UK "
-            "against the salary difference between a UK sector salary and your "
-            "home country's average income, to estimate a break-even point.",
-            style={"fontSize": "12px", "color": TEXT_SECONDARY, "marginTop": "10px"},
+            [
+                html.Div("How this is calculated", style={"fontWeight": "700", "marginBottom": "6px", "fontSize": "13px"}),
+                html.Div([
+                    html.Div("1. Total UK cost = tuition (typical fee for your sector) + monthly living cost × course length in months. Tuition comes from published typical ranges per sector; living cost comes from UKCISA/gov.uk estimates for your chosen region.", style={"marginBottom": "4px"}),
+                    html.Div("2. UK salary = the median salary for your chosen sector in the most recent year of data (ONS ASHE).", style={"marginBottom": "4px"}),
+                    html.Div("3. Home-country income = your country's GDP per capita (World Bank), converted to pounds. This is a national average, not a personal or profession-specific salary.", style={"marginBottom": "4px"}),
+                    html.Div("4. Annual advantage = UK salary minus home-country income.", style={"marginBottom": "4px"}),
+                    html.Div("5. Break-even point = total UK cost ÷ annual advantage. This is the number of years it would take for the extra UK earnings to cover what studying and living here cost.", style={"marginBottom": "4px"}),
+                ], style={"fontSize": "12px", "color": TEXT_SECONDARY}),
+            ],
+            style={"marginTop": "10px", "padding": "10px"},
+            className="panel",
         ),
         html.Div(
-            "Home country income is based on GDP per capita, since profession-"
-            "specific income data is not available for every country. This is a "
-            "general estimate, not a personal financial forecast. Sponsorship "
-            "activity is a sector-level relative ranking based on visa grants "
-            "versus vacancies - for a company-level estimate, see the "
-            "Sponsorship Fit tab.",
-            style={"fontSize": "11px", "color": TEXT_SECONDARY, "marginTop": "4px"},
+            "What this does and doesn't mean: it's a rough financial estimate based on national averages, not "
+            "a personal forecast - it doesn't know your actual salary offer, your personal spending habits, "
+            "tax, or career progression. Home country income is GDP per capita since profession-specific "
+            "income data isn't available for every country. Sponsorship activity here is a sector-level "
+            "relative ranking based on visa grants versus vacancies, not a company-level estimate - see the "
+            "Sponsorship Fit tab for that.",
+            style={"fontSize": "11px", "color": TEXT_SECONDARY, "marginTop": "8px"},
         ),
     ],
     className="tab-body",
@@ -349,6 +369,12 @@ roi_tab = html.Div(
 
 fit_calculator_tab = html.Div(
     [
+        html.Div(
+            "This tab ranks real licensed sponsors using simple, transparent rules - "
+            "it is an exploratory ranking, not a calibrated prediction of your "
+            "personal chances. See exactly how below.",
+            style={"fontSize": "13px", "color": TEXT_SECONDARY, "marginBottom": "14px"},
+        ),
         html.Label("Target sector"),
         dcc.Dropdown(
             id="fit-sector-dropdown",
@@ -360,7 +386,7 @@ fit_calculator_tab = html.Div(
         html.Div(id="fit-results-container", className="panel", style={"marginBottom": "20px"}),
         html.Div(
             [
-                html.Div("Model card", style={"fontWeight": "700", "marginBottom": "8px"}),
+                html.Div("How this ranking actually works", style={"fontWeight": "700", "marginBottom": "8px"}),
                 html.Div(id="fit-model-card"),
             ],
             className="panel",
@@ -409,46 +435,6 @@ regional_tab = html.Div(
         ),
         html.Div(
             [
-                html.Div("Where are these sponsor companies registered?", style={
-                    "fontFamily": "Inter, sans-serif", "fontSize": "14px",
-                    "fontWeight": "700", "color": TEXT, "marginBottom": "4px",
-                }),
-                html.Div(
-                    "The Companies tab showed you which employers hold a sponsor "
-                    "licence. This globe shows where those employers are "
-                    "registered, region by region. Darker blue means more "
-                    "sponsors. Rotate it by dragging with your mouse, and zoom "
-                    "with your scroll wheel - hover or click a region for its "
-                    "exact number. It uses the same sector filter as the chart "
-                    "above, and the same sponsor counts - it does not show visa "
-                    "numbers.",
-                    style={"fontSize": "12px", "color": TEXT_SECONDARY, "marginBottom": "6px"},
-                ),
-                html.Div(
-                    "Region boundaries: Office for National Statistics, Open "
-                    "Geography Portal, December 2024 (Open Government Licence v3.0). "
-                    "Source: Office for National Statistics licensed under the Open "
-                    "Government Licence v.3.0.",
-                    style={"fontSize": "11px", "color": TEXT_SECONDARY, "marginBottom": "10px"},
-                ),
-                dcc.Loading(
-                    dcc.Graph(
-                        id="regional-globe-chart",
-                        config={"displayModeBar": False, "topojsonURL": "/assets/topojson/"},
-                    ),
-                    type="circle", color=BLUE,
-                ),
-                html.Div(
-                    "The same numbers shown on the globe, listed by region:",
-                    style={"fontSize": "12px", "color": TEXT_SECONDARY, "marginTop": "12px", "marginBottom": "6px"},
-                ),
-                html.Div(id="regional-globe-accessible-list"),
-            ],
-            className="panel",
-            style={"marginBottom": "20px"},
-        ),
-        html.Div(
-            [
                 html.Div("Skilled Worker 5-year stay rate by region", style={
                     "fontFamily": "Inter, sans-serif", "fontSize": "14px",
                     "fontWeight": "700", "color": TEXT, "marginBottom": "4px",
@@ -476,19 +462,79 @@ sources_tab = html.Div(
     [
         html.Div("Data sources", style={
             "fontFamily": "Inter, sans-serif", "fontSize": "18px",
-            "fontWeight": "700", "color": TEXT, "marginBottom": "16px",
+            "fontWeight": "700", "color": TEXT, "marginBottom": "6px",
         }),
         html.Div(
+            "Full Harvard-style citations for every dataset used in this platform. DOIs are given where "
+            "one exists (mainly for ONS statistical datasets); most government and organisational sources "
+            "below don't have a DOI, so a verified official URL is given instead.",
+            style={"fontSize": "12px", "color": TEXT_SECONDARY, "marginBottom": "16px"},
+        ),
+        html.Div(
             [
-                html.Div([html.B("ONS VACS02 (Vacancy Survey) "), "- vacancy counts by industry, seasonally adjusted"], style={"marginBottom": "8px"}),
-                html.Div([html.B("Home Office Sponsors Register "), "- licensed sponsor companies, city, route"], style={"marginBottom": "8px"}),
-                html.Div([html.B("Companies House "), "- bulk company data used to match sponsors to a sector"], style={"marginBottom": "8px"}),
-                html.Div([html.B("Home Office Immigration System Statistics "), "- Skilled Worker visa grants by sector and year"], style={"marginBottom": "8px"}),
-                html.Div([html.B("ONS ASHE "), "- median salary by sector and year"], style={"marginBottom": "8px"}),
-                html.Div([html.B("Adzuna API "), "- job postings, used for active job counts and classifier training"], style={"marginBottom": "8px"}),
-                html.Div([html.B("Migration Advisory Committee "), "- \"Who Stays, Who Leaves?\" (2026), Skilled Worker 5-year stay rate by region"], style={"marginBottom": "8px"}),
-                html.Div([html.B("World Bank "), "- GDP per capita by country, used in the ROI calculator"], style={"marginBottom": "8px"}),
-                html.Div([html.B("UKCISA / gov.uk "), "- living cost estimates, used in the ROI calculator"], style={"marginBottom": "8px"}),
+                html.Div([
+                    "Office for National Statistics (2026) ",
+                    html.I("Vacancies by industry (VACS02)"),
+                    ". Available at: ",
+                    html.A("https://www.ons.gov.uk/employmentandlabourmarket/peoplenotinwork/unemployment/datasets/vacanciesbyindustryvacs02", href="https://www.ons.gov.uk/employmentandlabourmarket/peoplenotinwork/unemployment/datasets/vacanciesbyindustryvacs02", target="_blank"),
+                    " (Accessed: 2026).",
+                ], style={"marginBottom": "10px"}),
+                html.Div([
+                    "Home Office (2026) ",
+                    html.I("Register of licensed sponsors: workers"),
+                    ". Available at: ",
+                    html.A("https://www.gov.uk/government/publications/register-of-licensed-sponsors-workers", href="https://www.gov.uk/government/publications/register-of-licensed-sponsors-workers", target="_blank"),
+                    " (Accessed: 2026).",
+                ], style={"marginBottom": "10px"}),
+                html.Div([
+                    "Companies House (2026) ",
+                    html.I("Companies House data products"),
+                    ". Available at: ",
+                    html.A("https://www.gov.uk/government/organisations/companies-house", href="https://www.gov.uk/government/organisations/companies-house", target="_blank"),
+                    " (Accessed: 2026). Used to match sponsor organisations to a sector via SIC code.",
+                ], style={"marginBottom": "10px"}),
+                html.Div([
+                    "Home Office (2026) ",
+                    html.I("Immigration system statistics quarterly release"),
+                    ". Available at: ",
+                    html.A("https://www.gov.uk/government/collections/immigration-system-statistics-quarterly-release", href="https://www.gov.uk/government/collections/immigration-system-statistics-quarterly-release", target="_blank"),
+                    " (Accessed: 2026). Skilled Worker visa grants by occupation, industry and nationality.",
+                ], style={"marginBottom": "10px"}),
+                html.Div([
+                    "Office for National Statistics (2026) ",
+                    html.I("Annual Survey of Hours and Earnings (ASHE)"),
+                    ". Available at: ",
+                    html.A("https://www.ons.gov.uk/ashe", href="https://www.ons.gov.uk/ashe", target="_blank"),
+                    " (Accessed: 2026). Median salary by sector and year.",
+                ], style={"marginBottom": "10px"}),
+                html.Div([
+                    "Adzuna (2026) ",
+                    html.I("Adzuna API"),
+                    ". Available at: ",
+                    html.A("https://developer.adzuna.com/", href="https://developer.adzuna.com/", target="_blank"),
+                    " (Accessed: June 2026). Job postings snapshot, used for active job counts and classifier training.",
+                ], style={"marginBottom": "10px"}),
+                html.Div([
+                    "Migration Advisory Committee (2026) ",
+                    html.I("Who Stays, Who Leaves?"),
+                    ". Available at: ",
+                    html.A("https://www.gov.uk/government/organisations/migration-advisory-committee", href="https://www.gov.uk/government/organisations/migration-advisory-committee", target="_blank"),
+                    " (Accessed: 2026). Skilled Worker 5-year stay rate by region.",
+                ], style={"marginBottom": "10px"}),
+                html.Div([
+                    "World Bank (2026) ",
+                    html.I("GDP per capita (current US$)"),
+                    ". Available at: ",
+                    html.A("https://data.worldbank.org/indicator/NY.GDP.PCAP.CD", href="https://data.worldbank.org/indicator/NY.GDP.PCAP.CD", target="_blank"),
+                    " (Accessed: 2026). Used as the home-country income comparison in the ROI calculator.",
+                ], style={"marginBottom": "10px"}),
+                html.Div([
+                    "UK Council for International Student Affairs (2026) ",
+                    html.I("Living costs for international students"),
+                    ". Available at: ",
+                    html.A("https://www.ukcisa.org.uk/", href="https://www.ukcisa.org.uk/", target="_blank"),
+                    " (Accessed: 2026). Used for the monthly living-cost estimates in the ROI calculator.",
+                ], style={"marginBottom": "10px"}),
             ],
             className="panel",
         ),
@@ -502,6 +548,29 @@ nationality_tab = html.Div(
             "This tab shows which nationalities were most commonly sponsored, by "
             "sector, using combined Home Office data.",
             style={"fontSize": "13px", "color": TEXT_SECONDARY, "marginBottom": "14px"},
+        ),
+        html.Div(
+            [
+                html.Div("What this chart is actually measuring", style={"fontWeight": "700", "marginBottom": "4px", "fontSize": "13px"}),
+                html.Div(
+                    "\"SOC\" stands for Standard Occupational Classification - the UK "
+                    "government's system for grouping jobs into categories. The Home "
+                    "Office updated this system in 2020, so older and newer figures "
+                    "are published under two different editions (more on that below).",
+                    style={"fontSize": "12px", "color": TEXT_SECONDARY, "marginBottom": "6px"},
+                ),
+                html.Div(
+                    "\"Visa grants\" means the number of Skilled Worker sponsored "
+                    "work visas actually issued to people of that nationality in "
+                    "that sector and quarter. A grant means the visa was approved "
+                    "and issued - it doesn't mean a specific employer offered that "
+                    "specific individual a job; it's a national count, not a record "
+                    "of any single company's decision.",
+                    style={"fontSize": "12px", "color": TEXT_SECONDARY, "marginBottom": "10px"},
+                ),
+            ],
+            className="panel",
+            style={"marginBottom": "14px"},
         ),
         html.Div(
             [

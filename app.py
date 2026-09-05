@@ -40,7 +40,7 @@ app.layout = html.Div(
             [
                 html.Div(
                     [
-                        html.P("UK Job Market Platform", className="app-title"),
+                        html.H1("UK Job Market Platform", className="app-title"),
                         html.P("Sponsorship and salary intelligence · 2021-2026", className="app-subtitle"),
                     ]
                 ),

@@ -22,7 +22,6 @@ from data_loader import (
     gdp_df, tuition_df, living_cost_df,
     mac_stay_rate_df, REGION_MAPPED_COUNT, REGION_TOTAL_COUNT,
     nationality_df, ALL_POSSIBLE_QUARTERS,
-    UK_REGION_GEOJSON, UK_REGION_NAMES,
 )
 from sarima_forecast import SARIMA_RESULTS
 from roi_calculator import calculate_roi, get_sponsorship_activity_ranking
@@ -78,6 +77,8 @@ def update_sector_chart(sector):
             marker=dict(size=5, color=BLUE),
             fill="tozeroy",
             fillcolor="rgba(79, 124, 255, 0.08)",
+            name="Vacancies (actual)",
+            hovertemplate="%{x}: %{y:,.0f}<extra></extra>",
         )
     )
     fig.update_layout(title=f"{sector} - vacancy count by quarter, with 4-quarter forecast")
@@ -123,7 +124,7 @@ def update_sector_chart(sector):
         ("2021-Q1", "Brexit\n(Jan 2021)", TEXT_SECONDARY),
         ("2022-Q2", "Vacancy peak\n(Apr 2022)", TEAL),
         ("2024-Q2", "Threshold rise\n(Apr 2024)", AMBER),
-        ("2025-Q2", "Threshold rise\n(Apr 2025)", AMBER),
+        ("2025-Q2", "Threshold rise\n(Apr 2025)", DANGER),
     ]
     for quarter, label, colour in annotations:
         if quarter in filtered["Quarter"].values:
@@ -166,7 +167,13 @@ def update_sarima_diagnostics(sector):
             html.Div(
                 "This sector does not show a repeating yearly pattern in the "
                 "data available. The forecast instead follows the general trend.",
-                style={"fontSize": "12px", "color": AMBER, "marginBottom": "4px"},
+                # #92400E instead of AMBER - AMBER (#D97706) only reaches a
+                # 3.19:1 contrast ratio against white, below the 4.5:1 WCAG
+                # AA requirement for normal-size text (12px here). This
+                # darker shade in the same amber family reaches 7.09:1.
+                # AMBER itself is left untouched for chart markers, where
+                # different contrast rules apply.
+                style={"fontSize": "12px", "color": "#92400E", "marginBottom": "4px"},
             ),
             html.Div(
                 "Forecast based on 5 years of quarterly data. The darker shaded "
@@ -224,7 +231,13 @@ def update_skills_chart(sector):
         title=f"Top skills mentioned in {sector} job postings",
         xaxis_title="Number of postings mentioning this skill",
     )
-    return style_fig(fig)
+    fig = style_fig(fig)
+    # this override must come AFTER style_fig(), which unconditionally
+    # resets margin to l=40 - that's not enough room for these labels,
+    # "electrical engineering" and similar run up to 22 characters and
+    # were getting clipped, flagged directly by the supervisor
+    fig.update_layout(margin=dict(l=160))
+    return fig
 
 
 @app.callback(Output("sponsorship-comparison-chart", "figure"), Input("main-tabs", "value"))
@@ -279,6 +292,7 @@ def update_sponsorship_comparison(_):
     )
 
     fig.update_layout(
+        showlegend=False,
         yaxis=dict(range=[0, y_max]),
         # Same big year label needs to be on the starting view too, not
         # just inside the frames, otherwise it's missing before Play is pressed
@@ -327,12 +341,16 @@ def update_sponsorship_comparison(_):
 
 @app.callback(
     Output("company-table-container", "children"),
+    Output("company-results-summary", "children"),
+    Output("company-page-indicator", "children"),
     Input("city-search", "value"),
     Input("company-sector-filter", "value"),
     Input("favourites-only-toggle", "value"),
     Input("bookmarked-companies", "data"),
+    Input("company-table-page", "data"),
 )
-def update_company_table(search_value, sector_value, favourites_only, bookmarked):
+def update_company_table(search_value, sector_value, favourites_only, bookmarked, page):
+    PAGE_SIZE = 25
     results = sponsors_df
 
     # Filter by sector first, if one is selected
@@ -355,25 +373,41 @@ def update_company_table(search_value, sector_value, favourites_only, bookmarked
     # enriched rows instead of a random alphabetical slice that's mostly
     # blank (only about 18% of sponsors have a matched sector)
     if not search_value:
-        results = results.sort_values("Sector", na_position="last").head(10)
+        results = results.sort_values("Sector", na_position="last")
     # Search for companies that match the selected city
     else:
         results = results[results["City"].str.contains(search_value, case=False, na=False)]
         # Sort the matching companies by the number of active job postings
-        results = results.sort_values("Active_Job_Count", ascending=False, na_position="last").head(50)
+        results = results.sort_values("Active_Job_Count", ascending=False, na_position="last")
+
+    total_results = len(results)
+
+    if total_results == 0:
+        message = "No bookmarked companies yet - use the star to save one." if favourites_only else "No sponsors found matching that search."
+        return html.P(message, style={"color": TEXT_SECONDARY}), "0 results", ""
+
+    # Real pagination through the FULL matching set - previously this just
+    # silently cut results off at 10/50 rows with no way to see the rest
+    # (e.g. searching "London" matches 35,413 sponsors, but only 50 ever
+    # showed, with no indication anything was hidden - flagged directly
+    # by the supervisor). Clamping the requested page to a valid range so
+    # clicking Next past the last page doesn't show a blank table.
+    max_page = max(0, (total_results - 1) // PAGE_SIZE)
+    page = max(0, min(page or 0, max_page))
+    start = page * PAGE_SIZE
+    end = start + PAGE_SIZE
+    page_results = results.iloc[start:end].copy()
+
+    summary_text = f"Showing {start + 1}-{min(end, total_results)} of {total_results:,} results"
+    page_indicator_text = f"Page {page + 1} of {max_page + 1}"
 
     # showing a dash instead of a blank cell for companies with no Adzuna
     # match or no matched sector, so it's clear this is expected, not
     # missing/broken data
-    results = results.copy()
-    results["Active_Job_Count"] = results["Active_Job_Count"].apply(
+    page_results["Active_Job_Count"] = page_results["Active_Job_Count"].apply(
         lambda v: str(int(v)) if pd.notna(v) else "—"
     )
-    results["Sector"] = results["Sector"].fillna("—")
-
-    if results.empty:
-        message = "No bookmarked companies yet - use the star to save one." if favourites_only else "No sponsors found matching that search."
-        return html.P(message, style={"color": TEXT_SECONDARY})
+    page_results["Sector"] = page_results["Sector"].fillna("—")
 
     # Building the table manually instead of dbc.Table.from_dataframe, so
     # each row can have its own bookmark star button (from_dataframe
@@ -392,10 +426,10 @@ def update_company_table(search_value, sector_value, favourites_only, bookmarked
         "Sector": "Sector",
     }
     header = html.Thead(html.Tr(
-        [html.Th("")] + [html.Th(DISPLAY_LABELS.get(col, col)) for col in results.columns]
+        [html.Th("")] + [html.Th(DISPLAY_LABELS.get(col, col)) for col in page_results.columns]
     ))
     body_rows = []
-    for _, row in results.iterrows():
+    for _, row in page_results.iterrows():
         company_name = row["Organisation"]
         is_bookmarked = company_name in bookmarked
         star = html.Button(
@@ -403,9 +437,34 @@ def update_company_table(search_value, sector_value, favourites_only, bookmarked
             id={"type": "bookmark-star", "index": company_name},
             className="bookmark-star bookmark-star--active" if is_bookmarked else "bookmark-star",
         )
-        body_rows.append(html.Tr([html.Td(star)] + [html.Td(row[col]) for col in results.columns]))
+        body_rows.append(html.Tr([html.Td(star)] + [html.Td(row[col]) for col in page_results.columns]))
 
-    return dbc.Table([header, html.Tbody(body_rows)], striped=True, bordered=False, hover=True, size="sm")
+    table = dbc.Table([header, html.Tbody(body_rows)], striped=True, bordered=False, hover=True, size="sm")
+    return table, summary_text, page_indicator_text
+
+
+@app.callback(
+    Output("company-table-page", "data"),
+    Input("city-search", "value"),
+    Input("company-sector-filter", "value"),
+    Input("favourites-only-toggle", "value"),
+    Input("company-prev-page", "n_clicks"),
+    Input("company-next-page", "n_clicks"),
+    State("company-table-page", "data"),
+    prevent_initial_call=True,
+)
+def update_company_page(search_value, sector_value, favourites_only, prev_clicks, next_clicks, current_page):
+    # Whenever the search, sector, or favourites filter changes, jump back
+    # to page 0 - otherwise a user could search something new while sitting
+    # on page 12 and see an empty table with no obvious explanation why
+    triggered_id = ctx.triggered_id
+    if triggered_id in ("city-search", "company-sector-filter", "favourites-only-toggle"):
+        return 0
+    if triggered_id == "company-prev-page":
+        return max(0, (current_page or 0) - 1)
+    if triggered_id == "company-next-page":
+        return (current_page or 0) + 1
+    return current_page or 0
 
 
 @app.callback(
@@ -538,7 +597,7 @@ def update_roi_results(country, sector, region):
         style={"display": "flex", "flexWrap": "wrap", "gap": "20px"},
     )
 
-    # building a simple cumulative cost vs cumulative earnings-advantage
+    # building a simple st vs cumulative earnings-advantage
     # chart, showing where the two lines cross (the break-even point)
     years = list(range(0, 11))
     cumulative_cost = [result["total_cost"]] * len(years)  # cost is paid up front, stays flat
@@ -548,7 +607,7 @@ def update_roi_results(country, sector, region):
     fig.add_trace(go.Scatter(x=years, y=cumulative_cost, mode="lines", name="Total cost", line=dict(color=DANGER, width=2, dash="dash")))
     fig.add_trace(go.Scatter(x=years, y=cumulative_advantage, mode="lines", name="Cumulative salary advantage", line=dict(color=TEAL, width=2)))
     fig.update_layout(
-        title=f"Cumulative salary advantage vs total cost - {sector} in the UK vs {country}",
+        title=f"Cumulative salary advantage vs total cost — {sector} in the UK vs {country}",
         xaxis_title="Years after graduating",
         yaxis_title="£",
     )
@@ -683,235 +742,6 @@ def update_regional_heatmap(sector_filter):
     return styled_fig, coverage_text
 
 
-@app.callback(
-    Output("regional-globe-chart", "figure"),
-    Output("regional-globe-accessible-list", "children"),
-    Input("regional-sector-filter", "value"),
-)
-def update_regional_globe(sector_filter):
-    # S4-15 - 3D rotatable globe. Deliberately its own callback, separate
-    # from update_regional_heatmap() above: it only reads sponsors_df
-    # (already loaded, already used by the bar chart) and never edits or
-    # depends on that existing callback, so this can be added or removed
-    # without touching anything already working on this tab.
-    results = sponsors_df[sponsors_df["Region"].notna()]
-    if sector_filter:
-        results = results[results["Sector"] == sector_filter]
-
-    # Real counts from sponsors_df only - the same data source, the same
-    # filtering, and the same numbers the bar chart above is built from.
-    # Nothing here is invented, estimated, or redistributed. Reindexed
-    # over all 12 regions in UK_REGION_NAMES (filling 0 where a sector
-    # filter leaves a region with no matches) so the globe always shows
-    # all 12 regions and none are silently dropped.
-    region_counts = results["Region"].value_counts().reindex(UK_REGION_NAMES, fill_value=0)
-    title_suffix = f" — {sector_filter}" if sector_filter else " - all sectors"
-
-    # --- Geographic clarity pass (still S4-15, no other file touched) ---
-    # Real region-name labels, positioned with shapely's
-    # representative_point() on our own real ONS geometry (guaranteed to
-    # land inside the polygon, unlike a plain centroid, which can fall
-    # outside a concave/multi-part shape like Scotland). A handful of
-    # regions sit too close together for both names to be readable at
-    # this scale (London is a small enclave fully inside South East;
-    # the Midlands/Yorkshire cluster is tight) - LABEL_OFFSET_DEG nudges
-    # only the TEXT position for those, with a leader line always drawn
-    # back to the true location, so the coloured shape and its data never
-    # move. These offsets were derived empirically: rendered the map,
-    # measured the actual on-screen text boxes in a headless browser, ran
-    # an iterative pairwise-separation pass until zero boxes overlapped,
-    # then converted the resulting pixel shifts back to lat/lon. Verified
-    # zero label collisions at the default view (re-verify if this
-    # panel's pixel size ever changes materially - zooming further OUT
-    # than the default view can still crowd labels again, an inherent
-    # limit of static map labels rather than something fixable here).
-    LABEL_OFFSET_DEG = {
-        "London": (-1.6, 0.7),
-        "North West": (0.12, -1.40),
-        "Yorkshire and the Humber": (-0.12, 1.40),
-        "East Midlands": (0.16, 0.80),
-        "West Midlands": (-0.11, -0.20),
-        "East of England": (-0.03, 0.73),
-        "Wales": (-0.02, -1.33),
-    }
-    LEADER_LINE_REGIONS = {
-        "London", "North West", "Yorkshire and the Humber",
-        "East Midlands", "East of England", "Wales",
-    }
-    # Real, documented reference points for the two neighbouring
-    # landmasses visible in this tightly-cropped view - Ireland's
-    # commonly-cited geographic centre, and the part of the French coast
-    # actually visible here (near Calais), not France's national centroid
-    # which would be off-screen at this zoom. Muted styling so they read
-    # as orientation context only, clearly secondary to the UK regions.
-    NEIGHBOUR_LABELS = [("Ireland", 53.4, -7.9), ("France", 50.9, 1.9)]
-
-    def _relative_luminance(hexcolor):
-        r, g, b = [int(hexcolor.lstrip("#")[i:i+2], 16) / 255 for i in (0, 2, 4)]
-        def f(c):
-            return c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4
-        r, g, b = f(r), f(g), f(b)
-        return 0.2126 * r + 0.7152 * g + 0.0722 * b
-
-    def _blend(c1, c2, t):
-        r1, g1, b1 = [int(c1.lstrip("#")[i:i+2], 16) for i in (0, 2, 4)]
-        r2, g2, b2 = [int(c2.lstrip("#")[i:i+2], 16) for i in (0, 2, 4)]
-        return f"#{int(r1+(r2-r1)*t):02x}{int(g1+(g2-g1)*t):02x}{int(b1+(b2-b1)*t):02x}"
-
-    # Colour uses a square-root scale so all 12 regions are visually
-    # distinguishable - London's count is 15-20x most other regions, so a
-    # strictly linear colour scale makes 11 of 12 regions look almost
-    # identical pale blue. This affects ONLY the fill colour: the
-    # underlying counts (hover text, the colourbar's own tick labels, and
-    # the accessible table below) are always the real, untransformed
-    # sponsor numbers - verified by testing several sector filters
-    # spanning both very high-count and very low-count regions.
-    COLOR_POWER = 0.5
-    zmax = max(int(region_counts.max()), 1)
-    colorbar_real_vals = sorted(set([0] + [round(zmax * f) for f in (0.02, 0.08, 0.2, 0.4, 0.7, 1.0)]))
-    colorbar_tickvals = [(v / zmax) ** COLOR_POWER for v in colorbar_real_vals]
-    colorbar_ticktext = [f"{v:,}" for v in colorbar_real_vals]
-
-    label_lat, label_lon, label_text, label_color = [], [], [], []
-    leader_lat, leader_lon = [], []
-    for feat in UK_REGION_GEOJSON["features"]:
-        name = feat["properties"]["Region"]
-        # LabelPoint is precomputed offline in build_region_boundaries.py
-        # (shapely's representative_point() on the real ONS geometry,
-        # guaranteed to land inside the polygon) and baked into
-        # data/UK_Region_Boundaries.geojson - read here as a plain value,
-        # never recomputed at runtime. This keeps shapely a build-time-only
-        # dependency (matching how the geometry itself is already built
-        # offline) rather than a new package this app needs installed to
-        # even start.
-        rp_lat, rp_lon = feat["properties"]["LabelPoint"]
-        raw_t = region_counts.get(name, 0) / zmax
-        fill_color = _blend("#EAF2FB", BLUE, raw_t ** COLOR_POWER)
-        text_color = "#0B1220" if _relative_luminance(fill_color) > 0.35 else "#FFFFFF"
-        dlat, dlon = LABEL_OFFSET_DEG.get(name, (0, 0))
-        lat, lon = rp_lat + dlat, rp_lon + dlon
-        if name in LEADER_LINE_REGIONS:
-            leader_lat += [rp_lat, lat, None]
-            leader_lon += [rp_lon, lon, None]
-            if name == "London":
-                text_color = "#0B1220"  # offset label always sits on the pale open-sea background
-        label_lat.append(lat)
-        label_lon.append(lon)
-        label_text.append(name)
-        label_color.append(text_color)
-
-    globe_fig = go.Figure()
-    globe_fig.add_trace(go.Choropleth(
-        geojson=UK_REGION_GEOJSON,
-        featureidkey="properties.Region",
-        locations=region_counts.index,
-        z=[v ** COLOR_POWER for v in (region_counts.values / zmax)],
-        # customdata carries the REAL, untransformed count through to the
-        # hover text - z above only ever drives the fill colour
-        customdata=region_counts.values,
-        colorscale=[[0, "#EAF2FB"], [1, BLUE]],
-        marker_line_color="#FFFFFF",
-        marker_line_width=0.6,
-        zmin=0, zmax=1,
-        colorbar=dict(
-            title="Licensed sponsors<br>(darker = more)",
-            tickvals=colorbar_tickvals,
-            ticktext=colorbar_ticktext,
-        ),
-        hovertemplate="<b>%{location}</b><br>%{customdata:,} licensed sponsors<extra></extra>",
-    ))
-    globe_fig.add_trace(go.Scattergeo(
-        lat=leader_lat, lon=leader_lon, mode="lines",
-        line=dict(width=1.4, color="#5B6B85"), hoverinfo="skip", showlegend=False,
-    ))
-    globe_fig.add_trace(go.Scattergeo(
-        lat=[p[1] for p in NEIGHBOUR_LABELS], lon=[p[2] for p in NEIGHBOUR_LABELS],
-        text=[p[0] for p in NEIGHBOUR_LABELS],
-        mode="text",
-        textfont=dict(size=10, color="#AAB4C4", family="Inter, sans-serif"),
-        hoverinfo="skip", showlegend=False,
-    ))
-    globe_fig.add_trace(go.Scattergeo(
-        lat=label_lat, lon=label_lon, text=label_text,
-        mode="text",
-        textfont=dict(size=11, color=label_color, family="Inter, sans-serif"),
-        hoverinfo="skip", showlegend=False,
-    ))
-    globe_fig.update_geos(
-        projection_type="orthographic",
-        # Coastline/country/land context layers are drawn from Plotly's
-        # base world atlas - re-enabled here for geographic orientation
-        # (so a student can see this is the UK relative to Ireland and
-        # France, not just floating coloured shapes). Confirmed by
-        # network-request logging that this adds ZERO external
-        # dependency: dcc.Graph's topojsonURL config (set in tabs.py)
-        # already points at a self-hosted copy of the same base atlas
-        # file these layers need, so they're served from that local file,
-        # never from cdn.plot.ly.
-        showcountries=True,
-        countrycolor="#B8C4D9",
-        showcoastlines=True,
-        coastlinecolor="#B8C4D9",
-        showland=True,
-        landcolor="#F8FAFD",
-        showframe=False,
-        showocean=False,
-        showlakes=False,
-        showrivers=False,
-        showsubunits=False,
-        # A tight crop around just the 12 regions, centred on the UK,
-        # rather than a full world globe where the UK would be a tiny
-        # speck - still a genuine orthographic (curved-sphere) globe
-        # projection under the hood, verified against the installed
-        # Plotly version below; rotating it by dragging shows the same
-        # perspective curvature a wider view would.
-        fitbounds="locations",
-        bgcolor="#F3F6FB",
-    )
-    globe_fig.update_layout(
-        title=f"Licensed sponsor organisations by region{title_suffix}",
-        height=520,
-    )
-    styled_globe = style_fig(globe_fig)
-    # style_fig() sets its own fixed margin for every chart, which would
-    # otherwise override the near-zero margin this globe needs to render
-    # full-bleed - re-applied after style_fig(), same reasoning as the
-    # transition override already used on the bar chart above (own
-    # override, not shared - this callback never edits that one).
-    styled_globe.update_layout(transition={"duration": 0}, margin=dict(l=0, r=0, t=40, b=0))
-
-    # Accessible, focusable HTML table with the same 12 regions and
-    # counts as the globe - not an image, not colour-only, and not
-    # something that requires hovering a 3D shape to read. Sorted by
-    # count (highest first) so the student can see at a glance where
-    # sponsors are most concentrated, same story the globe's colours
-    # tell visually.
-    table_rows = region_counts.sort_values(ascending=False)
-    accessible_table = html.Table(
-        [
-            html.Caption(
-                f"Licensed sponsor organisations by region{title_suffix}",
-                style={"captionSide": "top", "textAlign": "left", "fontSize": "12px",
-                       "color": TEXT_SECONDARY, "marginBottom": "6px"},
-            ),
-            html.Thead(html.Tr([
-                html.Th("Region", scope="col", style={"textAlign": "left", "padding": "4px 10px 4px 0"}),
-                html.Th("Licensed sponsors", scope="col", style={"textAlign": "right", "padding": "4px 0"}),
-            ])),
-            html.Tbody([
-                html.Tr([
-                    html.Td(region, style={"padding": "3px 10px 3px 0"}),
-                    html.Td(f"{count:,}", style={"textAlign": "right", "padding": "3px 0", "fontVariantNumeric": "tabular-nums"}),
-                ])
-                for region, count in table_rows.items()
-            ]),
-        ],
-        style={"fontSize": "13px", "color": TEXT, "borderCollapse": "collapse", "width": "100%", "maxWidth": "420px"},
-    )
-
-    return styled_globe, accessible_table
-
-
 @app.callback(Output("mac-stay-rate-chart", "figure"), Input("main-tabs", "value"))
 def update_mac_stay_rate_chart(_):
     # The MAC's Skilled Worker 5-year stay rate by region - a retention
@@ -1020,7 +850,7 @@ def update_nationality_trend(sector, highlighted_nationality):
         connectgaps=False, hovertemplate="%{x}: %{y:,} grants<extra></extra>",
     ))
 
-    title_suffix = f" — {highlighted_nationality}" if highlighted_nationality else " - all nationalities"
+    title_suffix = f" - {highlighted_nationality}" if highlighted_nationality else " - all nationalities"
     fig.update_layout(title=f"{sector} visa grants by quarter{title_suffix}")
     fig.update_xaxes(title="Quarter", tickangle=-90, tickfont=dict(size=9))
     fig.update_yaxes(title="Grants")
@@ -1129,7 +959,15 @@ def update_small_multiples(_):
         )
         fig.update_xaxes(showticklabels=False, row=1, col=i + 1)
     fig.update_layout(height=280)
-    return style_fig(fig)
+    fig = style_fig(fig)
+    # style_fig()'s xaxis/yaxis styling only reaches the first subplot in
+    # a multi-column figure (xaxis2, xaxis3... aren't touched by a plain
+    # xaxis=dict(...) call) - update_xaxes/update_yaxes without a row/col
+    # applies to every subplot at once, fixing the missing gridlines on
+    # panels 2-5, flagged directly by the supervisor
+    fig.update_xaxes(gridcolor=BORDER, zerolinecolor=BORDER, linecolor=BORDER, showticklabels=False)
+    fig.update_yaxes(gridcolor=BORDER, zerolinecolor=BORDER, linecolor=BORDER)
+    return fig
 
 
 @app.callback(
@@ -1157,10 +995,10 @@ def export_companies_csv(n_clicks, search_value, sector_value, favourites_only, 
         results = results[results["Organisation"].isin(bookmarked_list)]
 
     if not search_value:
-        results = results.sort_values("Sector", na_position="last").head(10)
+        results = results.sort_values("Sector", na_position="last")
     else:
         results = results[results["City"].str.contains(search_value, case=False, na=False)]
-        results = results.sort_values("Active_Job_Count", ascending=False, na_position="last").head(50)
+        results = results.sort_values("Active_Job_Count", ascending=False, na_position="last")
 
     return dcc.send_data_frame(results.to_csv, "sponsor_companies.csv", index=False)
 
@@ -1191,21 +1029,36 @@ app.clientside_callback(
 
 @app.callback(Output("salary-surface-chart", "figure"), Input("main-tabs", "value"))
 def update_salary_surface(_):
-    # Year x Sector x Median_Salary - a real 5x5 grid from the master
-    # dataset, checked during the audit to confirm every cell is a real
-    # observation, nothing interpolated to fill a gap
-    years = sorted(master_df["Year"].unique())
-    pivot = master_df.pivot_table(index="Sector", columns="Year", values="Median_Salary", aggfunc="first")
-    pivot = pivot.reindex(SECTORS)
-
-    fig = go.Figure(data=[go.Surface(
-        z=pivot.values, x=years, y=SECTORS,
-        colorscale=[[0, "#DBEAFE"], [1, BLUE]],
-        hovertemplate="Year %{x}<br>%{y}<br>£%{z:,.0f}<extra></extra>",
-    )])
+    # Redesigned after supervisor feedback: the previous version plotted
+    # Year x Sector x Median_Salary as a surface, but Sector is categorical,
+    # not continuous - a surface implies smooth interpolation between
+    # points on both spatial axes, which is mathematically meaningless
+    # between e.g. "Education" and "Engineering" just because they happen
+    # to be adjacent in a list. Surfaces need two genuinely continuous,
+    # ordered axes to interpolate between.
+    #
+    # This uses three real, continuous metrics instead - Vacancy_Count,
+    # Median_Salary, and Visa_Grants, all already central to this
+    # platform's story - as a 3D scatter (not a surface, since these
+    # aren't on a regular grid). Sector is shown through point colour,
+    # which is a legitimate categorical encoding since colour doesn't
+    # require continuity the way spatial position does.
+    fig = go.Figure()
+    colours = [BLUE, TEAL, AMBER, "#8B5CF6", "#DC2626"]
+    for i, sector in enumerate(SECTORS):
+        sector_data = master_df[master_df["Sector"] == sector]
+        fig.add_trace(go.Scatter3d(
+            x=sector_data["Vacancy_Count"], y=sector_data["Median_Salary"], z=sector_data["Visa_Grants"],
+            mode="markers", name=sector,
+            marker=dict(size=5, color=colours[i % 5], opacity=0.85),
+            hovertemplate=(
+                f"{sector}<br>Vacancies: %{{x:,}}<br>Median salary: £%{{y:,}}"
+                "<br>Visa grants: %{z:,}<extra></extra>"
+            ),
+        ))
     fig.update_layout(
         scene=dict(
-            xaxis_title="Year", yaxis_title="", zaxis_title="Median salary (£)",
+            xaxis_title="Vacancy count", yaxis_title="Median salary (£)", zaxis_title="Visa grants",
         ),
         margin=dict(l=0, r=0, t=10, b=0),
         height=500,
