@@ -93,6 +93,21 @@ TEAL = "#16A34A"   # used for success/positive indicators
 AMBER = "#D97706"  # used for warnings and thresholds
 DANGER = "#DC2626"
 
+# One consistent colour per sector, reused everywhere a chart shows more
+# than one sector at once (previously each of those charts picked its
+# own colours independently, and didn't agree with each other or with
+# the Story page). This is the colour map the Story page
+# (narrative/narrative.html) already used - reusing it here rather than
+# inventing a new one, so the two are now consistent instead of picking
+# a third scheme.
+SECTOR_COLORS = {
+    "Technology": "#2563EB",
+    "Healthcare": "#16A34A",
+    "Finance": "#D97706",
+    "Engineering": "#DC2626",
+    "Education": "#7C3AED",
+}
+
 # These are the summary numbers shown on the Overview tab
 latest_year = master_df["Year"].max()
 total_sponsors = len(sponsors_df)

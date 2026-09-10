@@ -45,7 +45,7 @@ overview_tab = html.Div(
         html.Div(
             [
                 html.Div(
-                    "The story above covered the national picture. The tabs below break "
+                    "The story above covered the national picture. The tabs above break "
                     "that same picture down by sector, salary, employer, and region.",
                     style={"fontSize": "13px", "color": TEXT_SECONDARY},
                 ),
@@ -59,11 +59,14 @@ overview_tab = html.Div(
         ),
         html.Div(
             [
-                html.Div("How does every sector compare at once?", style={
+                html.H3("How do vacancies compare across every sector at once?", style={
                     "fontFamily": "Inter, sans-serif", "fontSize": "14px",
-                    "fontWeight": "700", "color": TEXT, "marginBottom": "4px",
+                    "fontWeight": "700", "color": TEXT, "margin": "0 0 4px 0",
                 }),
-                dcc.Loading(dcc.Graph(id="small-multiples-chart", config={"displayModeBar": False}), type="circle", color=BLUE),
+                html.Div(
+                    dcc.Loading(dcc.Graph(id="small-multiples-chart", config={"displayModeBar": False}), type="circle", color=BLUE),
+                    role="img", **{"aria-label": "Five small line charts comparing vacancy trends across all sectors on the same scale"},
+                ),
             ],
             className="panel",
             style={"marginTop": "14px"},
@@ -88,7 +91,14 @@ sectors_tab = html.Div(
             clearable=False,
             style={"maxWidth": "280px", "marginBottom": "20px"},
         ),
-        dcc.Loading(html.Div(dcc.Graph(id="sector-vacancy-chart", config={"displayModeBar": False}), className="panel", style={"marginBottom": "20px"}), type="circle", color=BLUE),
+        dcc.Loading(
+            html.Div(
+                dcc.Graph(id="sector-vacancy-chart", config={"displayModeBar": False}),
+                className="panel", style={"marginBottom": "20px"},
+                role="img", **{"aria-label": "Line chart of quarterly vacancies for the selected sector from 2021 to 2025, including a forecast"},
+            ),
+            type="circle", color=BLUE,
+        ),
         html.Div(
             [
                 html.Button("Export this chart as PNG", id="sector-chart-export-button", className="export-button"),
@@ -99,25 +109,28 @@ sectors_tab = html.Div(
         html.Div(id="sarima-diagnostics", className="panel", style={"marginBottom": "20px"}),
         html.Div(
             [
-                html.Div("Sector sponsorship comparison", style={
+                html.H3("Sector sponsorship comparison", style={
                     "fontFamily": "Inter, sans-serif", "fontSize": "14px",
-                    "fontWeight": "700", "color": TEXT, "marginBottom": "4px",
+                    "fontWeight": "700", "color": TEXT, "margin": "0 0 4px 0",
                 }),
                 html.Div(
                     "Skilled Worker visa grants by sector, 2021 to 2025. Use the slider "
                     "or play control to see the change year by year.",
                     style={"fontSize": "12px", "color": TEXT_SECONDARY, "marginBottom": "10px"},
                 ),
-                dcc.Loading(dcc.Graph(id="sponsorship-comparison-chart", config={"displayModeBar": False}), type="circle", color=BLUE),
+                html.Div(
+                    dcc.Loading(dcc.Graph(id="sponsorship-comparison-chart", config={"displayModeBar": False}), type="circle", color=BLUE),
+                    role="img", **{"aria-label": "Animated bar chart of Skilled Worker visa grants by sector, 2021 to 2025"},
+                ),
             ],
             className="panel",
             style={"marginBottom": "20px"},
         ),
         html.Div(
             [
-                html.Div("Top skills mentioned in job postings", style={
+                html.H3("Top skills mentioned in job postings", style={
                     "fontFamily": "Inter, sans-serif", "fontSize": "14px",
-                    "fontWeight": "700", "color": TEXT, "marginBottom": "4px",
+                    "fontWeight": "700", "color": TEXT, "margin": "0 0 4px 0",
                 }),
                 html.Div(
                     "Skills most frequently mentioned in job postings for this sector. "
@@ -126,7 +139,10 @@ sectors_tab = html.Div(
                     "skills. This is indicative, not a live or exhaustive analysis.",
                     style={"fontSize": "12px", "color": TEXT_SECONDARY, "marginBottom": "10px"},
                 ),
-                dcc.Loading(dcc.Graph(id="skills-chart", config={"displayModeBar": False}), type="circle", color=BLUE),
+                html.Div(
+                    dcc.Loading(dcc.Graph(id="skills-chart", config={"displayModeBar": False}), type="circle", color=BLUE),
+                    role="img", **{"aria-label": "Bar chart of the most frequently mentioned skills in job postings for the selected sector"},
+                ),
             ],
             className="panel",
         ),
@@ -234,7 +250,14 @@ salary_tab = html.Div(
             clearable=False,
             style={"maxWidth": "200px", "marginBottom": "20px"},
         ),
-        dcc.Loading(html.Div(dcc.Graph(id="salary-chart", config={"displayModeBar": False}), className="panel"), type="circle", color=BLUE),
+        dcc.Loading(
+            html.Div(
+                dcc.Graph(id="salary-chart", config={"displayModeBar": False}),
+                className="panel",
+                role="img", **{"aria-label": "Bar chart of median salary by sector for the selected year, with sectors below the visa salary threshold highlighted"},
+            ),
+            type="circle", color=BLUE,
+        ),
         html.Div(
             [
                 html.Span("● ", style={"color": DANGER}),
@@ -244,25 +267,28 @@ salary_tab = html.Div(
         ),
         html.Div(
             [
-                html.Div("Which sector's salary grew fastest? 2021 vs 2025", style={
+                html.H3("Which sector's salary grew fastest? 2021 vs 2025", style={
                     "fontFamily": "Inter, sans-serif", "fontSize": "14px",
-                    "fontWeight": "700", "color": TEXT, "marginBottom": "4px",
+                    "fontWeight": "700", "color": TEXT, "margin": "0 0 4px 0",
                 }),
                 html.Div(
                     "Technology's median salary grew faster than any other tracked sector "
                     "between 2021 and 2025.",
                     style={"fontSize": "12px", "color": TEXT_SECONDARY, "marginBottom": "10px"},
                 ),
-                dcc.Loading(dcc.Graph(id="salary-slope-chart", config={"displayModeBar": False}), type="circle", color=BLUE),
+                html.Div(
+                    dcc.Loading(dcc.Graph(id="salary-slope-chart", config={"displayModeBar": False}), type="circle", color=BLUE),
+                    role="img", **{"aria-label": "Line chart comparing each sector's median salary in 2021 versus 2025"},
+                ),
             ],
             className="panel",
             style={"marginTop": "20px"},
         ),
         html.Div(
             [
-                html.Div("Vacancies, salary, and visa grants together", style={
+                html.H3("Vacancies, salary, and visa grants together", style={
                     "fontFamily": "Inter, sans-serif", "fontSize": "14px",
-                    "fontWeight": "700", "color": TEXT, "marginBottom": "4px",
+                    "fontWeight": "700", "color": TEXT, "margin": "0 0 4px 0",
                 }),
                 html.Div(
                     "Drag to rotate. Each point is one sector-quarter, plotting three "
@@ -272,7 +298,10 @@ salary_tab = html.Div(
                     "practice.",
                     style={"fontSize": "12px", "color": TEXT_SECONDARY, "marginBottom": "10px"},
                 ),
-                dcc.Loading(dcc.Graph(id="salary-surface-chart", config={"displayModeBar": False}), type="circle", color=BLUE),
+                html.Div(
+                    dcc.Loading(dcc.Graph(id="salary-surface-chart", config={"displayModeBar": False}), type="circle", color=BLUE),
+                    role="img", **{"aria-label": "3D scatter chart plotting vacancy count, median salary and visa grants for each sector and quarter"},
+                ),
             ],
             className="panel",
             style={"marginTop": "20px"},
@@ -288,6 +317,29 @@ roi_tab = html.Div(
             "likely to be worth the cost, based on your home country and target "
             "sector.",
             style={"fontSize": "13px", "color": TEXT_SECONDARY, "marginBottom": "14px"},
+        ),
+        # Moved here, above the inputs/results/graph, so a general reader
+        # sees what's being calculated and the actual equations used
+        # before they start picking options or reading the graph -
+        # supervisor feedback was that this was previously easy to miss
+        # further down the page. Same five underlying steps as before,
+        # just reordered/reworded for clarity and with the cumulative
+        # salary advantage step (point 5) made explicit - this doesn't
+        # change calculate_roi() or any of the numbers it returns, only
+        # how they're explained.
+        html.Div(
+            [
+                html.H3("How this is calculated", style={"fontWeight": "700", "margin": "0 0 6px 0", "fontSize": "13px"}),
+                html.Div([
+                    html.Div("1. Total cost = tuition (typical fee for your target sector) + monthly living cost × course length in months. This is the one-off cost of a one-year taught Master's. Tuition comes from published typical ranges per sector; living cost comes from UKCISA/gov.uk estimates for your chosen study location.", style={"marginBottom": "4px"}),
+                    html.Div("2. Salary comparison = your target sector's UK median salary (ONS ASHE, most recent year) versus your home country's GDP per capita (World Bank), converted to pounds - a national average income figure, not a personal or profession-specific salary.", style={"marginBottom": "4px"}),
+                    html.Div("3. Annual advantage = UK salary minus home-country income.", style={"marginBottom": "4px"}),
+                    html.Div("4. Cumulative salary advantage (the rising line on the graph below) = annual advantage × number of years since graduating. It's the running total of extra earnings the UK figure gives you over the home-country figure, year by year.", style={"marginBottom": "4px"}),
+                    html.Div("5. Break-even point = total cost ÷ annual advantage. This is the number of years it would take the cumulative salary advantage to cover the total cost - the point where the two lines on the graph below cross.", style={"marginBottom": "4px"}),
+                ], style={"fontSize": "12px", "color": TEXT_SECONDARY}),
+            ],
+            style={"marginTop": "10px", "padding": "10px", "marginBottom": "20px"},
+            className="panel",
         ),
         html.Div(
             [
@@ -337,63 +389,33 @@ roi_tab = html.Div(
             type="circle", color=BLUE,
         ),
         dcc.Loading(
-            html.Div(dcc.Graph(id="roi-chart", config={"displayModeBar": False}), className="panel", style={"marginBottom": "20px"}),
+            html.Div(
+                dcc.Graph(id="roi-chart", config={"displayModeBar": False}),
+                className="panel", style={"marginBottom": "20px"},
+                role="img", **{"aria-label": "Line chart comparing cumulative salary advantage against total study cost over ten years"},
+            ),
             type="circle", color=BLUE,
-        ),
-        html.Div(
-            [
-                html.Div("How this is calculated", style={"fontWeight": "700", "marginBottom": "6px", "fontSize": "13px"}),
-                html.Div([
-                    html.Div("1. Total UK cost = tuition (typical fee for your sector) + monthly living cost × course length in months. Tuition comes from published typical ranges per sector; living cost comes from UKCISA/gov.uk estimates for your chosen region.", style={"marginBottom": "4px"}),
-                    html.Div("2. UK salary = the median salary for your chosen sector in the most recent year of data (ONS ASHE).", style={"marginBottom": "4px"}),
-                    html.Div("3. Home-country income = your country's GDP per capita (World Bank), converted to pounds. This is a national average, not a personal or profession-specific salary.", style={"marginBottom": "4px"}),
-                    html.Div("4. Annual advantage = UK salary minus home-country income.", style={"marginBottom": "4px"}),
-                    html.Div("5. Break-even point = total UK cost ÷ annual advantage. This is the number of years it would take for the extra UK earnings to cover what studying and living here cost.", style={"marginBottom": "4px"}),
-                ], style={"fontSize": "12px", "color": TEXT_SECONDARY}),
-            ],
-            style={"marginTop": "10px", "padding": "10px"},
-            className="panel",
         ),
         html.Div(
             "What this does and doesn't mean: it's a rough financial estimate based on national averages, not "
             "a personal forecast - it doesn't know your actual salary offer, your personal spending habits, "
             "tax, or career progression. Home country income is GDP per capita since profession-specific "
             "income data isn't available for every country. Sponsorship activity here is a sector-level "
-            "relative ranking based on visa grants versus vacancies, not a company-level estimate - see the "
-            "Sponsorship Fit tab for that.",
+            "relative ranking based on visa grants versus vacancies, not a company-level estimate.",
             style={"fontSize": "11px", "color": TEXT_SECONDARY, "marginTop": "8px"},
         ),
     ],
     className="tab-body",
 )
 
-fit_calculator_tab = html.Div(
-    [
-        html.Div(
-            "This tab ranks real licensed sponsors using simple, transparent rules - "
-            "it is an exploratory ranking, not a calibrated prediction of your "
-            "personal chances. See exactly how below.",
-            style={"fontSize": "13px", "color": TEXT_SECONDARY, "marginBottom": "14px"},
-        ),
-        html.Label("Target sector"),
-        dcc.Dropdown(
-            id="fit-sector-dropdown",
-            options=[{"label": s, "value": s} for s in SECTORS],
-            value=SECTORS[0],
-            clearable=False,
-            style={"maxWidth": "280px", "marginBottom": "20px"},
-        ),
-        html.Div(id="fit-results-container", className="panel", style={"marginBottom": "20px"}),
-        html.Div(
-            [
-                html.Div("How this ranking actually works", style={"fontWeight": "700", "marginBottom": "8px"}),
-                html.Div(id="fit-model-card"),
-            ],
-            className="panel",
-        ),
-    ],
-    className="tab-body",
-)
+# The Sponsorship Fit tab (fit_calculator_tab) was removed from the
+# dashboard UI here - supervisor feedback was that the Random Forest
+# classifier's F1 score (0.488) did not meet the 0.65 reliability bar the
+# project set, so the resulting company ranking wasn't reliable enough to
+# present to users. The underlying experiment (sponsorship_classifier.py)
+# and its evaluation are untouched; only this tab's layout, and its
+# routing/callback in callbacks.py and its nav entry in app.py, were
+# removed. See the dissertation for the full evaluation writeup.
 
 regional_tab = html.Div(
     [
@@ -405,9 +427,9 @@ regional_tab = html.Div(
         ),
         html.Div(
             [
-                html.Div("Licensed sponsors by region", style={
+                html.H3("Licensed sponsors by region", style={
                     "fontFamily": "Inter, sans-serif", "fontSize": "14px",
-                    "fontWeight": "700", "color": TEXT, "marginBottom": "4px",
+                    "fontWeight": "700", "color": TEXT, "margin": "0 0 4px 0",
                 }),
                 html.Div(
                     "This map shows where licensed sponsor companies are registered "
@@ -424,7 +446,10 @@ regional_tab = html.Div(
                     clearable=True,
                     style={"maxWidth": "280px", "marginBottom": "16px"},
                 ),
-                dcc.Loading(dcc.Graph(id="regional-heatmap-chart", config={"displayModeBar": False}), type="circle", color=BLUE),
+                html.Div(
+                    dcc.Loading(dcc.Graph(id="regional-heatmap-chart", config={"displayModeBar": False}), type="circle", color=BLUE),
+                    role="img", **{"aria-label": "Horizontal bar chart of licensed sponsor organisations by UK region"},
+                ),
                 html.Div(
                     id="regional-coverage-note",
                     style={"fontSize": "12px", "color": TEXT_SECONDARY, "marginTop": "10px"},
@@ -435,9 +460,53 @@ regional_tab = html.Div(
         ),
         html.Div(
             [
-                html.Div("Skilled Worker 5-year stay rate by region", style={
+                html.H3("Where are these sponsor companies registered?", style={
                     "fontFamily": "Inter, sans-serif", "fontSize": "14px",
-                    "fontWeight": "700", "color": TEXT, "marginBottom": "4px",
+                    "fontWeight": "700", "color": TEXT, "margin": "0 0 4px 0",
+                }),
+                html.Div(
+                    "The Companies tab showed you which employers hold a sponsor "
+                    "licence. This globe shows where those employers are "
+                    "registered, region by region. Darker blue means more "
+                    "sponsors. Rotate it by dragging with your mouse, and zoom "
+                    "with your scroll wheel - hover or click a region for its "
+                    "exact number. It uses the same sector filter as the chart "
+                    "above, and the same sponsor counts - it does not show visa "
+                    "numbers.",
+                    style={"fontSize": "12px", "color": TEXT_SECONDARY, "marginBottom": "6px"},
+                ),
+                html.Div(
+                    "Region boundaries: Office for National Statistics, Open "
+                    "Geography Portal, December 2024 (Open Government Licence v3.0). "
+                    "Source: Office for National Statistics licensed under the Open "
+                    "Government Licence v.3.0.",
+                    style={"fontSize": "11px", "color": TEXT_SECONDARY, "marginBottom": "10px"},
+                ),
+                html.Div(
+                    dcc.Loading(
+                        dcc.Graph(
+                            id="regional-globe-chart",
+                            config={"displayModeBar": False, "topojsonURL": "/assets/topojson/"},
+                        ),
+                        type="circle", color=BLUE,
+                    ),
+                    role="img",
+                    **{"aria-label": "Interactive 3D globe showing licensed sponsor organisations by UK region, darker colour means more sponsors. An accessible table with the same figures follows below."},
+                ),
+                html.Div(
+                    "The same numbers shown on the globe, listed by region:",
+                    style={"fontSize": "12px", "color": TEXT_SECONDARY, "marginTop": "12px", "marginBottom": "6px"},
+                ),
+                html.Div(id="regional-globe-accessible-list"),
+            ],
+            className="panel",
+            style={"marginBottom": "20px"},
+        ),
+        html.Div(
+            [
+                html.H3("Skilled Worker 5-year stay rate by region", style={
+                    "fontFamily": "Inter, sans-serif", "fontSize": "14px",
+                    "fontWeight": "700", "color": TEXT, "margin": "0 0 4px 0",
                 }),
                 html.Div(
                     "This is a different measure from the map above: the percentage "
@@ -450,7 +519,10 @@ regional_tab = html.Div(
                     "Source: Migration Advisory Committee, \"Who Stays, Who Leaves?\" (2026).",
                     style={"fontSize": "11px", "color": TEXT_SECONDARY, "marginBottom": "10px"},
                 ),
-                dcc.Loading(dcc.Graph(id="mac-stay-rate-chart", config={"displayModeBar": False}), type="circle", color=BLUE),
+                html.Div(
+                    dcc.Loading(dcc.Graph(id="mac-stay-rate-chart", config={"displayModeBar": False}), type="circle", color=BLUE),
+                    role="img", **{"aria-label": "Chart of the five-year Skilled Worker visa stay rate by UK region"},
+                ),
             ],
             className="panel",
         ),
@@ -574,9 +646,9 @@ nationality_tab = html.Div(
         ),
         html.Div(
             [
-                html.Div("Sponsored work visa grants by nationality", style={
+                html.H3("Sponsored work visa grants by nationality", style={
                     "fontFamily": "Inter, sans-serif", "fontSize": "14px",
-                    "fontWeight": "700", "color": TEXT, "marginBottom": "4px",
+                    "fontWeight": "700", "color": TEXT, "margin": "0 0 4px 0",
                 }),
                 html.Div(
                     "This combines two official Home Office datasets published in "
@@ -584,7 +656,11 @@ nationality_tab = html.Div(
                     "to September 2024. These months are not estimated or filled in "
                     "- the gap is shown as missing, consistent with the actual "
                     "published data.",
-                    style={"fontSize": "12px", "color": TEXT_SECONDARY, "marginBottom": "6px"},
+                    # genuinely explanatory (tells the reader how to read the
+                    # chart), not a source citation - darkened from the
+                    # secondary grey so it doesn't read as a skippable
+                    # footnote (supervisor feedback); size unchanged
+                    style={"fontSize": "12px", "color": TEXT, "marginBottom": "6px"},
                 ),
                 html.Div(
                     "Source datasets: Home Office, Immigration System Statistics - "
@@ -623,22 +699,28 @@ nationality_tab = html.Div(
                     ],
                     style={"display": "flex", "marginBottom": "16px"},
                 ),
-                dcc.Loading(dcc.Graph(id="nationality-ranking-chart", config={"displayModeBar": False}), type="circle", color=BLUE),
+                html.Div(
+                    dcc.Loading(dcc.Graph(id="nationality-ranking-chart", config={"displayModeBar": False}), type="circle", color=BLUE),
+                    role="img", **{"aria-label": "Horizontal bar chart of the top nationalities sponsored in the selected sector"},
+                ),
             ],
             className="panel",
             style={"marginBottom": "20px"},
         ),
         html.Div(
             [
-                html.Div("Grants over time, by quarter", style={
+                html.H3("Grants over time, by quarter", style={
                     "fontFamily": "Inter, sans-serif", "fontSize": "14px",
-                    "fontWeight": "700", "color": TEXT, "marginBottom": "4px",
+                    "fontWeight": "700", "color": TEXT, "margin": "0 0 4px 0",
                 }),
                 html.Div(
                     "The dashed line marks where the underlying dataset changes from "
                     "the SOC 2010 to the SOC 2020 release. The two sides should be "
                     "read as separate snapshots, not as one continuous trend.",
-                    style={"fontSize": "12px", "color": TEXT_SECONDARY, "marginBottom": "6px"},
+                    # genuinely explanatory (tells the reader how to read the
+                    # chart), not a source citation - same darkening as the
+                    # panel above, size unchanged
+                    style={"fontSize": "12px", "color": TEXT, "marginBottom": "6px"},
                 ),
                 html.Div(
                     "The Industry field used for sector mapping is the same in both "
@@ -646,7 +728,10 @@ nationality_tab = html.Div(
                     "extracted at different times.",
                     style={"fontSize": "11px", "color": TEXT_SECONDARY, "marginBottom": "10px"},
                 ),
-                dcc.Loading(dcc.Graph(id="nationality-trend-chart", config={"displayModeBar": False}), type="circle", color=BLUE),
+                html.Div(
+                    dcc.Loading(dcc.Graph(id="nationality-trend-chart", config={"displayModeBar": False}), type="circle", color=BLUE),
+                    role="img", **{"aria-label": "Line chart of visa grants by quarter and nationality, split by SOC dataset edition"},
+                ),
                 # this doesn't show anything on screen - it exists to stop a
                 # slow, older server response from overwriting a newer one
                 # when the nationality dropdown is changed rapidly (confirmed

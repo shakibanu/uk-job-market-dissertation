@@ -64,7 +64,6 @@ app.layout = html.Div(
                         dcc.Tab(label=tab_label("Salary", "trending-up"), value="tab-salary", className="tab", selected_className="tab--selected"),
                         dcc.Tab(label=tab_label("Regional", "map"), value="tab-regional", className="tab", selected_className="tab--selected"),
                         dcc.Tab(label=tab_label("Is the UK Worth It", "percent"), value="tab-roi", className="tab", selected_className="tab--selected"),
-                        dcc.Tab(label=tab_label("Sponsorship Fit", "check"), value="tab-fit", className="tab", selected_className="tab--selected"),
                         dcc.Tab(label=tab_label("Nationality", "globe"), value="tab-nationality", className="tab", selected_className="tab--selected"),
                         dcc.Tab(label=tab_label("Sources", "file-text"), value="tab-sources", className="tab", selected_className="tab--selected"),
                     ],
