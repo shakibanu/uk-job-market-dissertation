@@ -534,14 +534,8 @@ sources_tab = html.Div(
     [
         html.Div("Data sources", style={
             "fontFamily": "Inter, sans-serif", "fontSize": "18px",
-            "fontWeight": "700", "color": TEXT, "marginBottom": "6px",
+            "fontWeight": "700", "color": TEXT, "marginBottom": "16px",
         }),
-        html.Div(
-            "Full Harvard-style citations for every dataset used in this platform. DOIs are given where "
-            "one exists (mainly for ONS statistical datasets); most government and organisational sources "
-            "below don't have a DOI, so a verified official URL is given instead.",
-            style={"fontSize": "12px", "color": TEXT_SECONDARY, "marginBottom": "16px"},
-        ),
         html.Div(
             [
                 html.Div([

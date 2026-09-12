@@ -241,7 +241,7 @@
   <section class="hero">
     <div class="hero-eyebrow">Navigating the UK Job Market · 2021 - 2026</div>
     <h1>What actually happened to sponsored work in the UK - and why</h1>
-    <p>Five years of Brexit, COVID, and shifting immigration policy, told through the real data. Scroll to see how the market changed for international students.</p>
+    <p>Five years of Brexit, COVID, and shifting immigration policy, told through real data. Scroll to see how the market changed for international students.</p>
     <svg id="hero-timeline" viewBox="0 0 900 90" style="width: 100%; max-width: 900px; margin-top: 24px;"></svg>
     <div class="scroll-cue">Scroll to begin</div>
   </section>
@@ -257,7 +257,7 @@
           <div class="step-eyebrow">Chapter 1 &middot; Before Brexit</div>
           <h2>A different starting point</h2>
           <p>Before January 2021, EU citizens could work in the UK without needing a visa at all. Employer demand for sponsorship was low, and mostly limited to specialist roles from outside the EU.</p>
-          <p>UK vacancies across these five sectors sat around 264,000 at the start of 2021 - the baseline this whole story moves away from.</p>
+          <p>This story tracks five sectors - Technology, Healthcare, Finance, Engineering, and Education. UK vacancies across these five sectors sat around 264,000 at the start of 2021 - the baseline this whole story moves away from.</p>
         </div>
       </div>
 
@@ -275,7 +275,7 @@
         <div class="step-content">
           <div class="step-eyebrow">Chapter 3 &middot; The 2022 vacancy boom</div>
           <h2>Everyone was hiring at once</h2>
-          <p>As the economy reopened, vacancies rose sharply, and employers who had previously relied on EU labour turned to the Skilled Worker sponsorship route for the first time - many of them for the first time ever.</p>
+          <p>As the economy reopened, vacancies rose sharply, and employers who had previously relied on EU labour turned to the Skilled Worker sponsorship route - many of them for the first time ever.</p>
           <p>By 2022, the pattern that would shape the rest of this story was already forming.</p>
           <span class="step-stat">2022 - vacancies climbing fast</span>
         </div>
@@ -330,7 +330,6 @@
     <p>That's the national picture. But the real job market isn't one thing - it looks different depending on your sector, your salary, and where you're from. The rest of this platform is that same story, told about you specifically.</p>
     <p>Explore your own sector, search real licensed sponsors, and get a realistic picture of your own chances - not just the national trend.</p>
     <a href="/" class="cta-button">Explore the dashboard &rarr;</a>
-    <a href="/" class="sources-link">See the full list of data sources on the dashboard</a>
   </section>
 
 <script src="/story/vendor/d3.min.js"></script>
@@ -372,13 +371,13 @@
     groups.append("text")
       .attr("y", -14)
       .attr("text-anchor", function (d, i) { return i === 0 ? "start" : (i === events.length - 1 ? "end" : "middle"); })
-      .attr("font-size", "11px").attr("font-weight", "700").attr("fill", "#111827")
+      .attr("font-size", "13px").attr("font-weight", "700").attr("fill", "#111827")
       .text(function (d) { return d.date; });
 
     groups.append("text")
       .attr("y", 22)
       .attr("text-anchor", function (d, i) { return i === 0 ? "start" : (i === events.length - 1 ? "end" : "middle"); })
-      .attr("font-size", "10px").attr("fill", "#6B7280")
+      .attr("font-size", "12px").attr("fill", "#6B7280")
       .text(function (d) { return d.label; });
 
     groups.transition()

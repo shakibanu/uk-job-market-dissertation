@@ -55,6 +55,25 @@ UK_REGION_NAMES = sorted(feat["properties"]["Region"] for feat in UK_REGION_GEOJ
 # be combined or blended with the sponsor count above.
 mac_stay_rate_df = pd.read_csv("data/MAC_Stay_Rate_By_Region.csv")
 
+# UK regional population, used only to work out a "sponsors per 100,000
+# population" figure for the Regional tab's accessible table (supervisor
+# feedback). This is a separate dataset from anything else the Regional
+# tab uses - it is never combined with, or used to change, the sponsor
+# counts themselves, the globe, or the % share column already there.
+# Mid-2024 official population estimates (as at 30 June 2024), compiled
+# from the three bodies that publish this for the UK: Office for
+# National Statistics (9 English regions and Wales), National Records
+# of Scotland, and the Northern Ireland Statistics and Research Agency -
+# see data/UK_Population_By_Region.csv for the figure-by-figure sourcing.
+# Wales's figure is the Welsh Government's own release, rounded to the
+# nearest 1,000; every other row is exact.
+uk_population_df = pd.read_csv("data/UK_Population_By_Region.csv")
+UK_REGION_POPULATION = uk_population_df.set_index("Region")["Population_Mid2024"].to_dict()
+assert set(UK_REGION_POPULATION) == set(UK_REGION_NAMES), (
+    "UK_Population_By_Region.csv region names don't match UK_REGION_NAMES - "
+    "fix the mismatch instead of silently matching the wrong rows"
+)
+
 # Match sponsor companies with Adzuna job postings using company names
 sponsors_df["match_name"] = sponsors_df["Organisation"].str.upper().str.strip()
 # Count the number of active job postings for each company

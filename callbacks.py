@@ -22,7 +22,7 @@ from data_loader import (
     gdp_df, tuition_df, living_cost_df,
     mac_stay_rate_df, REGION_MAPPED_COUNT, REGION_TOTAL_COUNT,
     nationality_df, ALL_POSSIBLE_QUARTERS,
-    UK_REGION_GEOJSON, UK_REGION_NAMES,
+    UK_REGION_GEOJSON, UK_REGION_NAMES, UK_REGION_POPULATION,
 )
 from sarima_forecast import SARIMA_RESULTS
 from roi_calculator import calculate_roi, get_sponsorship_activity_ranking
@@ -615,7 +615,7 @@ def update_roi_results(country, sector, region):
     fig.add_trace(go.Scatter(x=years, y=cumulative_cost, mode="lines", name="Total cost", line=dict(color=DANGER, width=2, dash="dash")))
     fig.add_trace(go.Scatter(x=years, y=cumulative_advantage, mode="lines", name="Cumulative salary advantage", line=dict(color=TEAL, width=2)))
     fig.update_layout(
-        title=f"Cumulative salary advantage vs total cost — {sector} in the UK vs {country}",
+        title=f"Cumulative salary advantage vs total cost - {sector} in the UK vs {country}",
         xaxis_title="Years after graduating",
         yaxis_title="£",
     )
@@ -913,6 +913,14 @@ def update_regional_globe(sector_filter):
     # figure) - just each region's share of the total shown here, so the
     # table adds real information instead of duplicating the globe.
     total_shown = int(table_rows.sum())
+    # Sponsors per 100,000 population - added after supervisor feedback on
+    # the % share column above: population-normalised, so a reader can
+    # compare regions fairly regardless of how many people live there,
+    # rather than just which region has the most sponsors in absolute
+    # terms. UK_REGION_POPULATION (data_loader.py) is a separate dataset
+    # (official mid-2024 population estimates) - it is only read here, to
+    # add this one column. It does not touch region_counts, total_shown,
+    # the % share column, or the globe figure built above.
     accessible_table = html.Table(
         [
             html.Caption(
@@ -924,6 +932,7 @@ def update_regional_globe(sector_filter):
                 html.Th("Region", scope="col", style={"textAlign": "left", "padding": "4px 10px 4px 0"}),
                 html.Th("Licensed sponsors", scope="col", style={"textAlign": "right", "padding": "4px 0"}),
                 html.Th("% share of UK total", scope="col", style={"textAlign": "right", "padding": "4px 0 4px 10px"}),
+                html.Th("Sponsors per 100,000 people", scope="col", style={"textAlign": "right", "padding": "4px 0 4px 10px"}),
             ])),
             html.Tbody([
                 html.Tr([
@@ -933,14 +942,24 @@ def update_regional_globe(sector_filter):
                         f"{(count / total_shown * 100):.1f}%" if total_shown else "—",
                         style={"textAlign": "right", "padding": "3px 0 3px 10px", "fontVariantNumeric": "tabular-nums"},
                     ),
+                    html.Td(
+                        f"{(count / UK_REGION_POPULATION[region] * 100_000):.1f}",
+                        style={"textAlign": "right", "padding": "3px 0 3px 10px", "fontVariantNumeric": "tabular-nums"},
+                    ),
                 ])
                 for region, count in table_rows.items()
             ]),
         ],
-        style={"fontSize": "13px", "color": TEXT, "borderCollapse": "collapse", "width": "100%", "maxWidth": "420px"},
+        style={"fontSize": "13px", "color": TEXT, "borderCollapse": "collapse", "width": "100%", "maxWidth": "560px"},
+    )
+    population_source_note = html.Div(
+        "Population figures: mid-2024 estimates (as at 30 June 2024) from the "
+        "Office for National Statistics (England and Wales), National Records "
+        "of Scotland, and the Northern Ireland Statistics and Research Agency.",
+        style={"fontSize": "11px", "color": TEXT_SECONDARY, "marginTop": "6px"},
     )
 
-    return styled_globe, accessible_table
+    return styled_globe, html.Div([accessible_table, population_source_note])
 
 
 @app.callback(Output("mac-stay-rate-chart", "figure"), Input("main-tabs", "value"))
